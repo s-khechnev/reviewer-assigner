@@ -1,0 +1,7 @@
+env: debug
+
+http_server:
+  address: localhost
+  port: 8080
+  timeout: 5s
+  idle_timeout: 60s
