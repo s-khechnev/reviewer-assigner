@@ -1,4 +1,4 @@
-module avito
+module reviewer-assigner
 
 go 1.25.3
 

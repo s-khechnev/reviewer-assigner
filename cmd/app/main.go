@@ -1,9 +1,9 @@
 package main
 
 import (
-	"avito/internal/config"
 	"log/slog"
 	"os"
+	"reviewer-assigner/internal/config"
 )
 
 const (
