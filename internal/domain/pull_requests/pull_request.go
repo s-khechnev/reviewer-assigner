@@ -20,5 +20,5 @@ type PullRequest struct {
 	PullRequestShort
 	AssignedReviewers []string
 	CreatedAt         *time.Time
-	UpdatedAt         *time.Time
+	MergedAt          *time.Time
 }

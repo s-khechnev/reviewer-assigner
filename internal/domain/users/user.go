@@ -1,8 +1,8 @@
 package users
 
+import teamsDomain "reviewer-assigner/internal/domain/teams"
+
 type User struct {
-	Id       string
-	Name     string
+	teamsDomain.Member
 	TeamName string
-	IsActive bool
 }
