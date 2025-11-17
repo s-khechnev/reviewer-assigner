@@ -7,6 +7,11 @@ import (
 	"time"
 )
 
+const (
+	EnvDebug = "debug"
+	EnvProd  = "prod"
+)
+
 type Config struct {
 	Env        string     `yaml:"env" env-default:"prod"`
 	HttpServer HttpServer `yaml:"http_server"`
