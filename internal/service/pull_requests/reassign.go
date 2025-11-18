@@ -48,7 +48,7 @@ func (s *PullRequestService) Reassign(ctx context.Context, pullRequestID, oldRev
 		}
 	}
 
-	updatedPullRequest, err := s.pullRequestRepo.Update(ctx, pullRequestID, pullRequest)
+	updatedPullRequest, err := s.pullRequestRepo.UpdateReviewers(ctx, pullRequestID, pullRequest.AssignedReviewers)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update pull requesr: %w", err)
 	}
