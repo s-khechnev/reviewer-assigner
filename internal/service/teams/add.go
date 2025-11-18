@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	teamsDomain "reviewer-assigner/internal/domain/teams"
+	"reviewer-assigner/internal/logger"
 	"reviewer-assigner/internal/service"
 )
 
@@ -16,9 +17,11 @@ func (s *TeamService) AddTeam(
 	if err == nil {
 		return s.UpdateExistingTeam(ctx, team, members)
 	}
+	s.log.Error("failed to get team", logger.ErrAttr(err))
 
 	createdTeam, err := s.teamRepo.CreateTeam(ctx, name, members)
 	if err != nil {
+		s.log.Error("failed to create team", logger.ErrAttr(err))
 		return nil, fmt.Errorf("failed to add team: %w", err)
 	}
 
@@ -32,11 +35,13 @@ func (s *TeamService) UpdateExistingTeam(
 	newMembers []teamsDomain.Member,
 ) (*teamsDomain.Team, error) {
 	if !areMemberIdsEqual(oldTeam.Members, newMembers) {
+		s.log.Info("members are not equal")
 		return nil, fmt.Errorf("failed to update existing team: %w", service.ErrTeamAlreadyExists)
 	}
 
 	updatedTeam, err := s.teamRepo.UpdateTeam(ctx, oldTeam.Name, newMembers)
 	if err != nil {
+		s.log.Error("failed to update existing team", logger.ErrAttr(err))
 		return nil, fmt.Errorf("failed to update existing team: %w", err)
 	}
 

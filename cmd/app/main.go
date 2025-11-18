@@ -1,13 +1,17 @@
 package main
 
 import (
+	"context"
 	"log/slog"
+
 	"reviewer-assigner/internal/app"
 	"reviewer-assigner/internal/config"
 	"reviewer-assigner/internal/logger"
 )
 
 func main() {
+	ctx := context.Background()
+
 	cfg := config.GetConfig()
 	log := logger.New(cfg.Env)
 
@@ -17,5 +21,5 @@ func main() {
 	)
 	log.Debug("debug messages are enabled")
 
-	app.Run(cfg, log)
+	app.Run(ctx, cfg, log)
 }

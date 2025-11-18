@@ -22,7 +22,7 @@ func NewPostgresTeamRepository(pool *pgxpool.Pool) *PostgresTeamRepository {
 // TODO: errors
 
 func (r *PostgresTeamRepository) GetTeam(ctx context.Context, name string) (*teamsDomain.Team, error) {
-	rows, err := r.pool.Query(ctx, "SELECT u.id, u.name, u.is_active FROM users u WHERE team_name = $1", name)
+	rows, err := r.pool.Query(ctx, "SELECT u.external_id id, u.name, u.is_active FROM users u WHERE team_name = $1", name)
 	if err != nil {
 		return nil, err
 	}

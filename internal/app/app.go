@@ -11,14 +11,29 @@ import (
 	"os"
 	"os/signal"
 	"reviewer-assigner/internal/config"
-	"reviewer-assigner/internal/http/handler"
+	teamsHandler "reviewer-assigner/internal/http/handlers/teams"
 	"reviewer-assigner/internal/logger"
+	teamsService "reviewer-assigner/internal/service/teams"
+	postgres "reviewer-assigner/internal/storage"
+	teamsRepo "reviewer-assigner/internal/storage/teams"
 	"syscall"
 	"time"
 )
 
-func Run(cfg *config.Config, log *slog.Logger) {
-	teamHandler := handler.NewTeamHandler()
+func Run(ctx context.Context, cfg *config.Config, log *slog.Logger) {
+	dsnConnString := fmt.Sprintf(
+		"host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
+		cfg.DB.Host, cfg.DB.Port, cfg.DB.User, cfg.DB.Password, cfg.DB.Name, cfg.DB.SslMode)
+
+	pool, err := postgres.NewPool(ctx, dsnConnString)
+	if err != nil {
+		log.Error("failed to create pool to database", logger.ErrAttr(err))
+		os.Exit(1)
+	}
+
+	teamRepo := teamsRepo.NewPostgresTeamRepository(pool)
+	teamService := teamsService.NewTeamService(log, teamRepo)
+	teamHandler := teamsHandler.NewTeamHandler(log, teamService)
 
 	r := gin.New()
 
