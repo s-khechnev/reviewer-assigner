@@ -1,26 +1,27 @@
 -- +goose Up
 -- +goose StatementBegin
 CREATE TABLE teams (
-    team_name VARCHAR(128) PRIMARY KEY
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    name VARCHAR(64)
 );
 
 CREATE TABLE users (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    external_id VARCHAR(128) UNIQUE NOT NULL,
-    name VARCHAR(128) NOT NULL,
-    team_name VARCHAR(128) NOT NULL REFERENCES teams(team_name) ON DELETE RESTRICT,
+    user_id VARCHAR(64) UNIQUE NOT NULL,
+    name VARCHAR(64) NOT NULL,
+    team_id BIGINT REFERENCES teams(id) ON DELETE SET NULL,
     is_active BOOLEAN NOT NULL DEFAULT true
 );
 
-CREATE TYPE pr_status AS ENUM ('OPEN', 'MERGED');
+CREATE TYPE pull_request_status AS ENUM ('OPEN', 'MERGED');
 
 CREATE TABLE pull_requests (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    external_id VARCHAR(128) UNIQUE NOT NULL,
-    name VARCHAR(512) NOT NULL,
+    pull_request_id VARCHAR(64) UNIQUE NOT NULL,
+    name VARCHAR(256) NOT NULL,
     author_id BIGINT NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-    status pr_status NOT NULL DEFAULT 'OPEN',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    status pull_request_status NOT NULL DEFAULT 'OPEN',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     merged_at TIMESTAMP DEFAULT NULL
 );
 
@@ -35,7 +36,7 @@ CREATE TABLE pull_request_reviewers (
 -- +goose StatementBegin
 DROP TABLE pull_request_reviewers;
 DROP TABLE pull_requests;
-DROP TYPE pr_status;
+DROP TYPE pull_request_status;
 DROP TABLE users;
 DROP TABLE teams;
 -- +goose StatementEnd
