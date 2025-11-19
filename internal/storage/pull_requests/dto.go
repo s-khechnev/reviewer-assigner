@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-type PullRequestDb struct {
+type PullRequestDB struct {
 	ID            int64             `db:"id"`
 	PullRequestID string            `db:"pull_request_id"`
 	Name          string            `db:"name"`
@@ -15,7 +15,7 @@ type PullRequestDb struct {
 	MergedAt      *time.Time        `db:"merged_at"`
 }
 
-func DbToDomainPullRequestShort(d *PullRequestDb) *prDomain.PullRequestShort {
+func DbToDomainPullRequestShort(d *PullRequestDB) *prDomain.PullRequestShort {
 	return &prDomain.PullRequestShort{
 		ID:       d.PullRequestID,
 		Name:     d.Name,
@@ -24,7 +24,7 @@ func DbToDomainPullRequestShort(d *PullRequestDb) *prDomain.PullRequestShort {
 	}
 }
 
-func DbToDomainPullRequest(d *PullRequestDb) *prDomain.PullRequest {
+func DbToDomainPullRequest(d *PullRequestDB) *prDomain.PullRequest {
 	return &prDomain.PullRequest{
 		PullRequestShort: prDomain.PullRequestShort{
 			ID:       d.PullRequestID,

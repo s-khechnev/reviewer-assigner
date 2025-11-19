@@ -2,6 +2,7 @@ package pull_requests
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -19,14 +20,35 @@ func NewPostgresPullRequestRepository(pool *pgxpool.Pool) *PostgresPullRequestRe
 }
 
 func (r *PostgresPullRequestRepository) GetPullRequestsForReview(ctx context.Context, userID string) ([]prDomain.PullRequestShort, error) {
-	const query = `
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	const queryGetSurrogateUserID = `
+	SELECT u.id FROM users u
+	WHERE u.user_id = $1
+`
+
+	var surrogateUserID int64
+	err = tx.QueryRow(ctx, queryGetSurrogateUserID, userID).Scan(&surrogateUserID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		// Is it ok?
+		return []prDomain.PullRequestShort{}, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user: %w", err)
+	}
+
+	const queryGetPRs = `
 	SELECT prs.pull_request_id, prs.name, prs.author_id, prs.status FROM pull_requests prs
 	JOIN pull_request_reviewers prr on prs.id = prr.pull_request_id
 	WHERE prr.reviewer_id = $1 and prs.status = 'OPEN'
 `
 
-	rows, _ := r.pool.Query(ctx, query, userID)
-	pullRequestsDB, err := pgx.CollectRows(rows, pgx.RowToStructByName[PullRequestDb])
+	rows, _ := r.pool.Query(ctx, queryGetPRs, surrogateUserID)
+	pullRequestsDB, err := pgx.CollectRows(rows, pgx.RowToStructByName[PullRequestDB])
 	if err != nil {
 		return nil, fmt.Errorf("failed to get pull requests: %w", err)
 	}
@@ -46,7 +68,7 @@ func (r *PostgresPullRequestRepository) Get(ctx context.Context, pullRequestID s
 	`
 
 	rows, _ := r.pool.Query(ctx, query, pullRequestID)
-	pullRequestDB, err := pgx.CollectExactlyOneRow(rows, pgx.RowToAddrOfStructByName[PullRequestDb])
+	pullRequestDB, err := pgx.CollectExactlyOneRow(rows, pgx.RowToAddrOfStructByName[PullRequestDB])
 	if err != nil {
 		return nil, fmt.Errorf("failed to get pull request: %w", err)
 	}
@@ -78,7 +100,7 @@ func (r *PostgresPullRequestRepository) Merge(ctx context.Context, pullRequestID
     `
 
 	rows, _ := r.pool.Query(ctx, query, pullRequestID)
-	pullRequestDB, err := pgx.CollectExactlyOneRow(rows, pgx.RowToAddrOfStructByName[PullRequestDb])
+	pullRequestDB, err := pgx.CollectExactlyOneRow(rows, pgx.RowToAddrOfStructByName[PullRequestDB])
 	if err != nil {
 		return nil, fmt.Errorf("failed to merge pull request: %w", err)
 	}

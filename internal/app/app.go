@@ -12,10 +12,14 @@ import (
 	"os/signal"
 	"reviewer-assigner/internal/config"
 	teamsHandler "reviewer-assigner/internal/http/handlers/teams"
+	usersHandler "reviewer-assigner/internal/http/handlers/users"
 	"reviewer-assigner/internal/logger"
 	teamsService "reviewer-assigner/internal/service/teams"
+	usersService "reviewer-assigner/internal/service/users"
 	"reviewer-assigner/internal/storage/postgres"
+	pullRequestsRepo "reviewer-assigner/internal/storage/pull_requests"
 	teamsRepo "reviewer-assigner/internal/storage/teams"
+	usersRepo "reviewer-assigner/internal/storage/users"
 	"syscall"
 	"time"
 )
@@ -32,8 +36,14 @@ func Run(ctx context.Context, cfg *config.Config, log *slog.Logger) {
 	}
 
 	teamRepo := teamsRepo.NewPostgresTeamRepository(pool)
+	userRepo := usersRepo.NewPostgresUserRepository(pool)
+	pullRequestRepo := pullRequestsRepo.NewPostgresPullRequestRepository(pool)
+
 	teamService := teamsService.NewTeamService(log, teamRepo)
+	userService := usersService.NewUserService(log, userRepo, pullRequestRepo)
+
 	teamHandler := teamsHandler.NewTeamHandler(log, teamService)
+	userHandler := usersHandler.NewUserHandler(log, userService)
 
 	r := gin.New()
 
@@ -53,6 +63,12 @@ func Run(ctx context.Context, cfg *config.Config, log *slog.Logger) {
 		teamGroup.GET("/get", teamHandler.GetTeam)
 	}
 
+	{
+		userGroup := r.Group("/users")
+		userGroup.POST("/setIsActive", userHandler.SetIsActive)
+		userGroup.GET("/getReview", userHandler.GetReview)
+	}
+
 	server := &http.Server{
 		Addr:         fmt.Sprintf("%s:%d", cfg.HttpServer.Address, cfg.HttpServer.Port),
 		Handler:      r,
@@ -62,7 +78,7 @@ func Run(ctx context.Context, cfg *config.Config, log *slog.Logger) {
 	}
 
 	go func() {
-		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		if err = server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Error("failed listen", logger.ErrAttr(err))
 		}
 	}()
