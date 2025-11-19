@@ -7,6 +7,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	teamsDomain "reviewer-assigner/internal/domain/teams"
+	"reviewer-assigner/internal/storage"
 )
 
 type PostgresTeamRepository struct {
@@ -19,32 +20,49 @@ func NewPostgresTeamRepository(pool *pgxpool.Pool) *PostgresTeamRepository {
 	}
 }
 
-// TODO: errors
-
 func (r *PostgresTeamRepository) GetTeam(ctx context.Context, name string) (*teamsDomain.Team, error) {
-	const query = `
-	SELECT u.user_id, u.name, u.is_active FROM users u
-	JOIN teams t ON t.id = u.team_id
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	const queryGetTeamID = `
+	SELECT t.id FROM teams t
 	WHERE t.name = $1
 `
 
-	rows, err := r.pool.Query(ctx, query, name)
+	var teamID int64
+	err = tx.QueryRow(ctx, queryGetTeamID, name).Scan(&teamID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, storage.ErrTeamNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to find team: %w", err)
+	}
+
+	const queryGetTeamMembers = `
+	SELECT u.id, u.user_id, u.name, u.is_active FROM users u
+	WHERE u.team_id = $1
+`
+
+	rows, err := tx.Query(ctx, queryGetTeamMembers, teamID)
 	if err != nil {
 		return nil, err
 	}
 
-	membersDB, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[MemberDb])
+	membersDB, err := pgx.CollectRows(rows, pgx.RowToStructByName[MemberDB])
 	if err != nil {
 		return nil, err
 	}
 
-	if len(membersDB) == 0 {
-		return nil, errors.New("team not found")
+	if err = tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
 	members := make([]teamsDomain.Member, 0, len(membersDB))
 	for _, member := range membersDB {
-		members = append(members, *DbToDomainMember(member))
+		members = append(members, *DbToDomainMember(&member))
 	}
 
 	return &teamsDomain.Team{
@@ -72,16 +90,17 @@ func (r *PostgresTeamRepository) SaveTeam(ctx context.Context, teamName string, 
 	}
 
 	const queryInsertMember = `
-	INSERT INTO users (user_id, name, team_id) VALUES ($1, $2, $3)
+	INSERT INTO users (user_id, name, team_id, is_active)
+	VALUES ($1, $2, $3, $4)
 	`
 
 	batch := &pgx.Batch{}
-	for i := range members {
-		batch.Queue(queryInsertMember, members[i].ID, members[i].Name, teamName)
+	for _, member := range members {
+		batch.Queue(queryInsertMember, member.ID, member.Name, teamID, member.IsActive)
 	}
 
 	if err = tx.SendBatch(ctx, batch).Close(); err != nil {
-		return 0, fmt.Errorf("failed to close batch: %w", err)
+		return 0, fmt.Errorf("failed to batch insert members: %w", err)
 	}
 
 	if err = tx.Commit(ctx); err != nil {
@@ -98,9 +117,15 @@ func (r *PostgresTeamRepository) UpdateTeam(ctx context.Context, teamName string
 	}
 	defer tx.Rollback(ctx)
 
-	const queryTeamID = `SELECT id FROM teams WHERE name = $4`
+	const queryTeamID = `
+	SELECT id FROM teams WHERE name = $1
+	`
+
 	var teamID int64
 	err = tx.QueryRow(ctx, queryTeamID, teamName).Scan(&teamID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return storage.ErrTeamNotFound
+	}
 	if err != nil {
 		return fmt.Errorf("failed to find team: %w", err)
 	}
@@ -109,7 +134,7 @@ func (r *PostgresTeamRepository) UpdateTeam(ctx context.Context, teamName string
 	UPDATE users 
 	SET name = $1, is_active = $2 
 	WHERE user_id = $3 AND team_id = $4
-`
+	`
 
 	batch := &pgx.Batch{}
 	for _, member := range members {
@@ -119,7 +144,7 @@ func (r *PostgresTeamRepository) UpdateTeam(ctx context.Context, teamName string
 	}
 
 	if err = tx.SendBatch(ctx, batch).Close(); err != nil {
-		return fmt.Errorf("failed to close batch: %w", err)
+		return fmt.Errorf("failed to batch update members: %w", err)
 	}
 
 	if err = tx.Commit(ctx); err != nil {

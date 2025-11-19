@@ -14,7 +14,7 @@ import (
 	teamsHandler "reviewer-assigner/internal/http/handlers/teams"
 	"reviewer-assigner/internal/logger"
 	teamsService "reviewer-assigner/internal/service/teams"
-	postgres "reviewer-assigner/internal/storage"
+	"reviewer-assigner/internal/storage/postgres"
 	teamsRepo "reviewer-assigner/internal/storage/teams"
 	"syscall"
 	"time"
@@ -28,7 +28,7 @@ func Run(ctx context.Context, cfg *config.Config, log *slog.Logger) {
 	pool, err := postgres.NewPool(ctx, dsnConnString)
 	if err != nil {
 		log.Error("failed to create pool to database", logger.ErrAttr(err))
-		os.Exit(1)
+		return
 	}
 
 	teamRepo := teamsRepo.NewPostgresTeamRepository(pool)
@@ -79,6 +79,4 @@ func Run(ctx context.Context, cfg *config.Config, log *slog.Logger) {
 	if err := server.Shutdown(ctx); err != nil {
 		log.Error("failed to shutdown", logger.ErrAttr(err))
 	}
-
-	log.Info("service exiting")
 }

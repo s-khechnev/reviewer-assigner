@@ -2,7 +2,7 @@
 -- +goose StatementBegin
 CREATE TABLE teams (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    name VARCHAR(64)
+    name VARCHAR(64) NOT NULL UNIQUE
 );
 
 CREATE TABLE users (

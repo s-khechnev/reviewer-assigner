@@ -22,4 +22,6 @@ func main() {
 	log.Debug("debug messages are enabled")
 
 	app.Run(ctx, cfg, log)
+
+	log.Info("service exiting")
 }

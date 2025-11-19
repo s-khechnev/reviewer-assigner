@@ -3,6 +3,7 @@ package teams
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	teamsDomain "reviewer-assigner/internal/domain/teams"
 	"reviewer-assigner/internal/logger"
 	"reviewer-assigner/internal/service"
@@ -13,17 +14,29 @@ func (s *TeamService) AddTeam(
 	name string,
 	members []teamsDomain.Member,
 ) (*teamsDomain.Team, error) {
-	team, err := s.teamRepo.GetTeam(ctx, name)
-	if err == nil {
+	const op = "services.teams.AddTeam"
+	log := s.log.With(
+		slog.String("op", op),
+		slog.String("team_name", name),
+	)
+
+	// if team already exists then update members
+	if team, err := s.teamRepo.GetTeam(ctx, name); err == nil {
+		log.Info("team already exists")
+
 		return s.UpdateExistingTeam(ctx, team, members)
 	}
-	s.log.Error("failed to get team", logger.ErrAttr(err))
 
-	_, err = s.teamRepo.SaveTeam(ctx, name, members)
+	log.Info("failed to find team")
+
+	id, err := s.teamRepo.SaveTeam(ctx, name, members)
 	if err != nil {
-		s.log.Error("failed to create team", logger.ErrAttr(err))
+		log.Error("failed to save team", logger.ErrAttr(err))
+
 		return nil, fmt.Errorf("failed to add team: %w", err)
 	}
+
+	log.Info("added new team", slog.Int64("id", id))
 
 	return &teamsDomain.Team{
 		Name:    name,
@@ -37,16 +50,29 @@ func (s *TeamService) UpdateExistingTeam(
 	oldTeam *teamsDomain.Team,
 	newMembers []teamsDomain.Member,
 ) (*teamsDomain.Team, error) {
-	if !areMemberIdsEqual(oldTeam.Members, newMembers) {
-		s.log.Info("members are not equal")
-		return nil, fmt.Errorf("failed to update existing team: %w", service.ErrTeamAlreadyExists)
+	const op = "services.teams.UpdateExistingTeam"
+	log := s.log.With(
+		slog.String("op", op),
+		slog.String("team_name", oldTeam.Name),
+	)
+
+	if !areMemberIDsEqual(oldTeam.Members, newMembers) {
+		log.Warn("member IDs mismatch",
+			slog.Any("oldMembers", oldTeam.Members),
+			slog.Any("newMembers", newMembers),
+		)
+
+		return nil, fmt.Errorf("member IDs mismatch: %w", service.ErrTeamAlreadyExists)
 	}
 
 	err := s.teamRepo.UpdateTeam(ctx, oldTeam.Name, newMembers)
 	if err != nil {
-		s.log.Error("failed to update existing team", logger.ErrAttr(err))
+		log.Error("failed to update existing team", logger.ErrAttr(err))
+
 		return nil, fmt.Errorf("failed to update existing team: %w", err)
 	}
+
+	log.Info("team updated", slog.Any("members", newMembers))
 
 	return &teamsDomain.Team{
 		Name:    oldTeam.Name,
@@ -54,11 +80,7 @@ func (s *TeamService) UpdateExistingTeam(
 	}, nil
 }
 
-func areMemberIdsEqual(oldMembers, newMembers []teamsDomain.Member) bool {
-	if len(oldMembers) != len(newMembers) {
-		return false
-	}
-
+func areMemberIDsEqual(oldMembers, newMembers []teamsDomain.Member) bool {
 	set := make(map[string]struct{}, len(oldMembers))
 	for _, m := range oldMembers {
 		set[m.ID] = struct{}{}
