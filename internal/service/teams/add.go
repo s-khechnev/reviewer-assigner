@@ -19,13 +19,16 @@ func (s *TeamService) AddTeam(
 	}
 	s.log.Error("failed to get team", logger.ErrAttr(err))
 
-	createdTeam, err := s.teamRepo.CreateTeam(ctx, name, members)
+	_, err = s.teamRepo.SaveTeam(ctx, name, members)
 	if err != nil {
 		s.log.Error("failed to create team", logger.ErrAttr(err))
 		return nil, fmt.Errorf("failed to add team: %w", err)
 	}
 
-	return createdTeam, nil
+	return &teamsDomain.Team{
+		Name:    name,
+		Members: members,
+	}, nil
 }
 
 // UpdateExistingTeam updates the members of an existing team only if the member IDs remain the same
@@ -39,13 +42,16 @@ func (s *TeamService) UpdateExistingTeam(
 		return nil, fmt.Errorf("failed to update existing team: %w", service.ErrTeamAlreadyExists)
 	}
 
-	updatedTeam, err := s.teamRepo.UpdateTeam(ctx, oldTeam.Name, newMembers)
+	err := s.teamRepo.UpdateTeam(ctx, oldTeam.Name, newMembers)
 	if err != nil {
 		s.log.Error("failed to update existing team", logger.ErrAttr(err))
 		return nil, fmt.Errorf("failed to update existing team: %w", err)
 	}
 
-	return updatedTeam, nil
+	return &teamsDomain.Team{
+		Name:    oldTeam.Name,
+		Members: newMembers,
+	}, nil
 }
 
 func areMemberIdsEqual(oldMembers, newMembers []teamsDomain.Member) bool {
