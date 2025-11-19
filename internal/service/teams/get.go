@@ -8,7 +8,6 @@ import (
 	teamsDomain "reviewer-assigner/internal/domain/teams"
 	"reviewer-assigner/internal/logger"
 	"reviewer-assigner/internal/service"
-	"reviewer-assigner/internal/storage"
 )
 
 func (s *TeamService) GetTeam(
@@ -22,7 +21,7 @@ func (s *TeamService) GetTeam(
 	)
 
 	team, err := s.teamRepo.GetTeam(ctx, name)
-	if errors.Is(err, storage.ErrTeamNotFound) {
+	if errors.Is(err, service.ErrTeamNotFound) {
 		log.Warn("team not found")
 		return nil, service.ErrTeamNotFound
 	}

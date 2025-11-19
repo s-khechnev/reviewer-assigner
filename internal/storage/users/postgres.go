@@ -7,7 +7,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	usersDomain "reviewer-assigner/internal/domain/users"
-	"reviewer-assigner/internal/storage"
+	"reviewer-assigner/internal/service"
 )
 
 type PostgresUserRepository struct {
@@ -49,7 +49,7 @@ func (r *PostgresUserRepository) SetIsActive(ctx context.Context, userID string,
 	var user usersDomain.User
 	err := r.pool.QueryRow(ctx, query, isActive, userID).Scan(&user.ID, &user.Name, &user.IsActive, &user.TeamName)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, storage.ErrUserNotFound
+		return nil, service.ErrUserNotFound
 	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to update user: %w", err)

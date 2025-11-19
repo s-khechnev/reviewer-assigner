@@ -8,7 +8,6 @@ import (
 	usersDomain "reviewer-assigner/internal/domain/users"
 	"reviewer-assigner/internal/logger"
 	"reviewer-assigner/internal/service"
-	"reviewer-assigner/internal/storage"
 )
 
 func (s *UserService) SetIsActive(ctx context.Context, userID string, isActive bool) (*usersDomain.User, error) {
@@ -19,7 +18,7 @@ func (s *UserService) SetIsActive(ctx context.Context, userID string, isActive b
 	)
 
 	user, err := s.userRepo.SetIsActive(ctx, userID, isActive)
-	if errors.Is(err, storage.ErrUserNotFound) {
+	if errors.Is(err, service.ErrUserNotFound) {
 		log.Warn("user not found")
 
 		return nil, service.ErrUserNotFound

@@ -7,7 +7,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	teamsDomain "reviewer-assigner/internal/domain/teams"
-	"reviewer-assigner/internal/storage"
+	"reviewer-assigner/internal/service"
 )
 
 type PostgresTeamRepository struct {
@@ -35,7 +35,7 @@ func (r *PostgresTeamRepository) GetTeam(ctx context.Context, name string) (*tea
 	var teamID int64
 	err = tx.QueryRow(ctx, queryGetTeamID, name).Scan(&teamID)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, storage.ErrTeamNotFound
+		return nil, service.ErrTeamNotFound
 	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to find team: %w", err)
@@ -124,7 +124,7 @@ func (r *PostgresTeamRepository) UpdateTeam(ctx context.Context, teamName string
 	var teamID int64
 	err = tx.QueryRow(ctx, queryTeamID, teamName).Scan(&teamID)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return storage.ErrTeamNotFound
+		return service.ErrTeamNotFound
 	}
 	if err != nil {
 		return fmt.Errorf("failed to find team: %w", err)
