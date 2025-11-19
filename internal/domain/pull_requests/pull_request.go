@@ -4,15 +4,15 @@ import "time"
 
 type StatusPR string
 
-var (
+const (
 	StatusOpen   StatusPR = "OPEN"
 	StatusMerged StatusPR = "MERGED"
 )
 
 type PullRequestShort struct {
-	Id       string
+	ID       string
 	Name     string
-	AuthorId string
+	AuthorID string
 	Status   StatusPR
 }
 

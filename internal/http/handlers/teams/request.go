@@ -23,7 +23,7 @@ func membersDTOtoDomain(members []TeamMemberDTO) []teamsDomain.Member {
 
 func memberDTOtoDomain(member *TeamMemberDTO) teamsDomain.Member {
 	return teamsDomain.Member{
-		Id:       member.UserID,
+		ID:       member.UserID,
 		Name:     member.Username,
 		IsActive: member.IsActive,
 	}

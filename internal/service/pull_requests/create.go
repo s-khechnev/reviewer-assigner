@@ -24,7 +24,7 @@ func (s *PullRequestService) Create(ctx context.Context, prID, prName, authorID 
 
 	activeMembersExcludeAuthor := make([]teamsDomain.Member, 0, len(activeMembers))
 	for _, member := range activeMembers {
-		if member.Id != author.Id {
+		if member.ID != author.ID {
 			activeMembersExcludeAuthor = append(activeMembersExcludeAuthor, member)
 		}
 	}
@@ -36,25 +36,25 @@ func (s *PullRequestService) Create(ctx context.Context, prID, prName, authorID 
 
 	reviewersIDs := make([]string, 0, len(reviewers))
 	for i := range reviewers {
-		reviewersIDs = append(reviewersIDs, reviewers[i].Id)
+		reviewersIDs = append(reviewersIDs, reviewers[i].ID)
 	}
 
 	now := time.Now()
 	pullRequest := &prDomain.PullRequest{
 		PullRequestShort: prDomain.PullRequestShort{
-			Id:       prID,
+			ID:       prID,
 			Name:     prName,
-			AuthorId: author.Id,
+			AuthorID: author.ID,
 			Status:   prDomain.StatusOpen,
 		},
 		AssignedReviewers: reviewersIDs,
 		CreatedAt:         &now,
 	}
 
-	createdPullRequest, err := s.pullRequestRepo.Create(ctx, pullRequest)
+	_, err = s.pullRequestRepo.Create(ctx, pullRequest)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create pull request: %w", err)
 	}
 
-	return createdPullRequest, nil
+	return pullRequest, nil
 }

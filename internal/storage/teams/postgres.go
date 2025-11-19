@@ -57,7 +57,7 @@ func (r *PostgresTeamRepository) CreateTeam(ctx context.Context, teamName string
 	query := "INSERT INTO users (external_id, name, team_name) VALUES ($1, $2, $3)"
 	batch := &pgx.Batch{}
 	for i := range members {
-		batch.Queue(query, members[i].Id, members[i].Name, teamName)
+		batch.Queue(query, members[i].ID, members[i].Name, teamName)
 	}
 
 	if err = tx.SendBatch(ctx, batch).Close(); err != nil {
@@ -85,7 +85,7 @@ func (r *PostgresTeamRepository) UpdateTeam(ctx context.Context, teamName string
 	for _, member := range members {
 		batch.Queue(
 			"UPDATE users SET name = $1, is_active = $2 WHERE external_id = $3 AND team_name = $4",
-			member.Name, member.IsActive, member.Id, teamName,
+			member.Name, member.IsActive, member.ID, teamName,
 		)
 	}
 

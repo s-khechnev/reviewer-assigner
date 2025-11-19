@@ -19,9 +19,9 @@ type TeamRepository interface {
 
 type PullRequestRepository interface {
 	Get(ctx context.Context, pullRequestID string) (*prDomain.PullRequest, error)
-	Create(ctx context.Context, pullRequest *prDomain.PullRequest) (*prDomain.PullRequest, error)
+	Create(ctx context.Context, pullRequest *prDomain.PullRequest) (string, error)
 	Merge(ctx context.Context, pullRequestID string) (*prDomain.PullRequest, error)
-	UpdateReviewers(ctx context.Context, pullRequestID string, newReviewerIDs []string) (*prDomain.PullRequest, error)
+	UpdateReviewers(ctx context.Context, pullRequestID string, newReviewerIDs []string) error
 }
 
 type ReviewerPicker interface {

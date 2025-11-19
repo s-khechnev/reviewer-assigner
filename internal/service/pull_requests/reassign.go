@@ -26,7 +26,7 @@ func (s *PullRequestService) Reassign(ctx context.Context, pullRequestID, oldRev
 
 	activeMembersExcludeOldReviewerAuthor := make([]teamsDomain.Member, 0, len(activeMembers))
 	for _, member := range activeMembers {
-		if member.Id != oldReviewer.Id && member.Id != pullRequest.AuthorId {
+		if member.ID != oldReviewer.ID && member.ID != pullRequest.AuthorID {
 			activeMembersExcludeOldReviewerAuthor = append(activeMembersExcludeOldReviewerAuthor, member)
 		}
 	}
@@ -43,15 +43,15 @@ func (s *PullRequestService) Reassign(ctx context.Context, pullRequestID, oldRev
 
 	for i, reviewerID := range pullRequest.AssignedReviewers {
 		if reviewerID == oldReviewerID {
-			pullRequest.AssignedReviewers[i] = newReviewer.Id
+			pullRequest.AssignedReviewers[i] = newReviewer.ID
 			break
 		}
 	}
 
-	updatedPullRequest, err := s.pullRequestRepo.UpdateReviewers(ctx, pullRequestID, pullRequest.AssignedReviewers)
+	err = s.pullRequestRepo.UpdateReviewers(ctx, pullRequestID, pullRequest.AssignedReviewers)
 	if err != nil {
-		return nil, fmt.Errorf("failed to update pull requesr: %w", err)
+		return nil, fmt.Errorf("failed to update reviewers: %w", err)
 	}
 
-	return updatedPullRequest, nil
+	return pullRequest, nil
 }

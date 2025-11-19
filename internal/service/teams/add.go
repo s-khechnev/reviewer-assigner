@@ -55,11 +55,11 @@ func areMemberIdsEqual(oldMembers, newMembers []teamsDomain.Member) bool {
 
 	set := make(map[string]struct{}, len(oldMembers))
 	for _, m := range oldMembers {
-		set[m.Id] = struct{}{}
+		set[m.ID] = struct{}{}
 	}
 
 	for _, m := range newMembers {
-		if _, ok := set[m.Id]; !ok {
+		if _, ok := set[m.ID]; !ok {
 			return false
 		}
 	}

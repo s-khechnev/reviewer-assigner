@@ -1,7 +1,7 @@
 package teams
 
 type Member struct {
-	Id       string
+	ID       string
 	Name     string
 	IsActive bool
 }
