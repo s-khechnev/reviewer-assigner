@@ -5,33 +5,54 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"reviewer-assigner/internal/domain"
 	prDomain "reviewer-assigner/internal/domain/pull_requests"
 	"reviewer-assigner/internal/logger"
 	"reviewer-assigner/internal/service"
 )
 
-// TODO: errors
-
-func (s *PullRequestService) Merge(ctx context.Context, pullRequestId string) (*prDomain.PullRequest, error) {
+func (s *PullRequestService) Merge(ctx context.Context, pullRequestID string) (pullRequest *prDomain.PullRequest, err error) {
 	const op = "services.pull_requests.Merge"
 	log := s.log.With(
 		slog.String("op", op),
-		slog.String("pull_request_id", pullRequestId),
+		slog.String("pull_request_id", pullRequestID),
 	)
 
-	mergedPR, err := s.pullRequestRepo.Merge(ctx, pullRequestId)
-	if errors.Is(err, service.ErrPullRequestNotFound) {
-		log.Error("pull request not found")
+	err = s.txManager.Do(ctx, func(ctx context.Context) error {
+		pullRequest, err = s.pullRequestRepo.GetByID(ctx, pullRequestID)
+		if errors.Is(err, service.ErrPullRequestNotFound) {
+			log.Error("pull request not found")
 
-		return nil, service.ErrPullRequestNotFound
-	}
-	if err != nil {
-		log.Error("failed to merge pull request", logger.ErrAttr(err))
+			return service.ErrPullRequestNotFound
+		}
+		if err != nil {
+			log.Error("failed to merge pull request", logger.ErrAttr(err))
 
-		return nil, fmt.Errorf("failed to merge pull request: %w", err)
-	}
+			return fmt.Errorf("failed to merge pull request: %w", err)
+		}
 
-	log.Info("pull request merged", slog.Any("pull_request", mergedPR))
+		err = pullRequest.Merge()
+		if errors.Is(err, domain.ErrPullRequestAlreadyMerged) {
+			// It's ok
+			log.Info("pull request is already merged")
 
-	return mergedPR, nil
+			return nil
+		}
+		if err != nil {
+			log.Error("failed to merge pull request", logger.ErrAttr(err))
+
+			return fmt.Errorf("failed to merge pull request: %w", err)
+		}
+
+		err = s.pullRequestRepo.SetStatusMerged(ctx, pullRequestID, *pullRequest.MergedAt)
+		if err != nil {
+			log.Error("failed to set status merged", logger.ErrAttr(err))
+
+			return fmt.Errorf("failed to set status merged: %w", err)
+		}
+
+		return nil
+	})
+
+	return pullRequest, err
 }

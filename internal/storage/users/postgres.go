@@ -4,59 +4,61 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
+	trmpgx "github.com/avito-tech/go-transaction-manager/drivers/pgxv5/v2"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+
 	usersDomain "reviewer-assigner/internal/domain/users"
 	"reviewer-assigner/internal/service"
 )
 
 type PostgresUserRepository struct {
-	pool *pgxpool.Pool
+	pool   *pgxpool.Pool
+	getter *trmpgx.CtxGetter
 }
 
-func NewPostgresUserRepository(pool *pgxpool.Pool) *PostgresUserRepository {
+func NewPostgresUserRepository(pool *pgxpool.Pool, getter *trmpgx.CtxGetter) *PostgresUserRepository {
 	return &PostgresUserRepository{
-		pool: pool,
+		pool:   pool,
+		getter: getter,
 	}
 }
 
-func (r *PostgresUserRepository) Get(ctx context.Context, userID string) (*usersDomain.User, error) {
+func (r *PostgresUserRepository) GetUserByID(ctx context.Context, userID string) (*usersDomain.User, error) {
 	const query = `
-	SELECT u.user_id, u.name, u.is_active, t.name FROM users u
+	SELECT u.id, u.user_id, u.name, u.is_active, t.name team_name FROM users u
 	JOIN teams t ON t.id = u.team_id
 	WHERE user_id = $1
 	`
 
-	var user usersDomain.User
-	err := r.pool.
-		QueryRow(ctx, query, userID).
-		Scan(&user.ID, &user.Name, &user.IsActive, &user.TeamName)
+	rows, _ := r.getter.DefaultTrOrDB(ctx, r.pool).Query(ctx, query, userID)
+	userDB, err := pgx.CollectExactlyOneRow(rows, pgx.RowToAddrOfStructByName[UserDB])
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, service.ErrUserNotFound
 	}
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to collect user: %w", err)
 	}
 
-	return &user, nil
+	return toDomainUser(userDB), nil
 }
 
-func (r *PostgresUserRepository) SetIsActive(ctx context.Context, userID string, isActive bool) (*usersDomain.User, error) {
+func (r *PostgresUserRepository) UpdateIsActive(ctx context.Context, user *usersDomain.User) error {
 	const query = `
-    UPDATE users
-    SET is_active = $1
-    WHERE user_id = $2
-    RETURNING user_id, name, is_active, (SELECT name FROM teams WHERE id = team_id) as team_name
-    `
+	UPDATE users SET is_active = $1
+	WHERE user_id = $2
+	RETURNING id
+	`
 
-	var user usersDomain.User
-	err := r.pool.QueryRow(ctx, query, isActive, userID).Scan(&user.ID, &user.Name, &user.IsActive, &user.TeamName)
+	var surrogateUserID int64
+	err := r.getter.DefaultTrOrDB(ctx, r.pool).QueryRow(ctx, query, user.IsActive, user.ID).Scan(&surrogateUserID)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, service.ErrUserNotFound
+		return service.ErrUserNotFound
 	}
 	if err != nil {
-		return nil, fmt.Errorf("failed to update user: %w", err)
+		return fmt.Errorf("failed to update user: %w", err)
 	}
 
-	return &user, nil
+	return nil
 }

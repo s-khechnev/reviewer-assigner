@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	trmpgx "github.com/avito-tech/go-transaction-manager/drivers/pgxv5/v2"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	teamsDomain "reviewer-assigner/internal/domain/teams"
@@ -11,29 +12,30 @@ import (
 )
 
 type PostgresTeamRepository struct {
-	pool *pgxpool.Pool
+	pool   *pgxpool.Pool
+	getter *trmpgx.CtxGetter
 }
 
-func NewPostgresTeamRepository(pool *pgxpool.Pool) *PostgresTeamRepository {
+func NewPostgresTeamRepository(pool *pgxpool.Pool, getter *trmpgx.CtxGetter) *PostgresTeamRepository {
 	return &PostgresTeamRepository{
-		pool: pool,
+		pool:   pool,
+		getter: getter,
 	}
 }
 
-func (r *PostgresTeamRepository) GetTeam(ctx context.Context, name string) (*teamsDomain.Team, error) {
-	tx, err := r.pool.Begin(ctx)
+func (r *PostgresTeamRepository) GetTeamByName(ctx context.Context, teamName string) (*teamsDomain.Team, error) {
+	tx, err := r.getter.DefaultTrOrDB(ctx, r.pool).Begin(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to begin transaction: %w", err)
 	}
 	defer tx.Rollback(ctx)
 
 	const queryGetTeamID = `
-	SELECT t.id FROM teams t
-	WHERE t.name = $1
-`
+		SELECT t.id FROM teams t WHERE t.name = $1
+	`
 
 	var teamID int64
-	err = tx.QueryRow(ctx, queryGetTeamID, name).Scan(&teamID)
+	err = tx.QueryRow(ctx, queryGetTeamID, teamName).Scan(&teamID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, service.ErrTeamNotFound
 	}
@@ -42,18 +44,18 @@ func (r *PostgresTeamRepository) GetTeam(ctx context.Context, name string) (*tea
 	}
 
 	const queryGetTeamMembers = `
-	SELECT u.id, u.user_id, u.name, u.is_active FROM users u
-	WHERE u.team_id = $1
-`
+		SELECT u.id, u.user_id, u.name, u.is_active FROM users u
+		WHERE u.team_id = $1
+	`
 
 	rows, err := tx.Query(ctx, queryGetTeamMembers, teamID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to query team members: %w", err)
 	}
 
 	membersDB, err := pgx.CollectRows(rows, pgx.RowToStructByName[MemberDB])
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to collect team members: %w", err)
 	}
 
 	if err = tx.Commit(ctx); err != nil {
@@ -66,13 +68,13 @@ func (r *PostgresTeamRepository) GetTeam(ctx context.Context, name string) (*tea
 	}
 
 	return &teamsDomain.Team{
-		Name:    name,
+		Name:    teamName,
 		Members: members,
 	}, nil
 }
 
 func (r *PostgresTeamRepository) SaveTeam(ctx context.Context, teamName string, members []teamsDomain.Member) (int64, error) {
-	tx, err := r.pool.Begin(ctx)
+	tx, err := r.getter.DefaultTrOrDB(ctx, r.pool).Begin(ctx)
 	if err != nil {
 		return 0, fmt.Errorf("failed to begin transaction: %w", err)
 	}
@@ -110,8 +112,8 @@ func (r *PostgresTeamRepository) SaveTeam(ctx context.Context, teamName string, 
 	return teamID, nil
 }
 
-func (r *PostgresTeamRepository) UpdateTeam(ctx context.Context, teamName string, members []teamsDomain.Member) error {
-	tx, err := r.pool.Begin(ctx)
+func (r *PostgresTeamRepository) UpdateMembers(ctx context.Context, teamName string, updatedMembers []teamsDomain.Member) error {
+	tx, err := r.getter.DefaultTrOrDB(ctx, r.pool).Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
@@ -137,14 +139,14 @@ func (r *PostgresTeamRepository) UpdateTeam(ctx context.Context, teamName string
 	`
 
 	batch := &pgx.Batch{}
-	for _, member := range members {
+	for _, member := range updatedMembers {
 		batch.Queue(query,
 			member.Name, member.IsActive, member.ID, teamID,
 		)
 	}
 
 	if err = tx.SendBatch(ctx, batch).Close(); err != nil {
-		return fmt.Errorf("failed to batch update members: %w", err)
+		return fmt.Errorf("failed to batch update updatedMembers: %w", err)
 	}
 
 	if err = tx.Commit(ctx); err != nil {

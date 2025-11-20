@@ -24,7 +24,7 @@ func NewUserHandler(log *slog.Logger, userService *users.UserService) *UserHandl
 }
 
 func (h *UserHandler) SetIsActive(c *gin.Context) {
-	const op = "handlers.users.SetIsActive"
+	const op = "handlers.users.UpdateIsActive"
 	log := h.log.With(slog.String("op", op))
 
 	var req SetIsActiveRequest

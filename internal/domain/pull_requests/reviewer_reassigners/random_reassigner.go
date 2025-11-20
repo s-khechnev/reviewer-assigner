@@ -1,7 +1,7 @@
 package reviewer_reassigners
 
 import (
-	"reviewer-assigner/internal/domain/pull_requests"
+	"reviewer-assigner/internal/domain"
 	reviewerPickers "reviewer-assigner/internal/domain/pull_requests/reviewer_pickers"
 	teamsDomain "reviewer-assigner/internal/domain/teams"
 )
@@ -22,7 +22,7 @@ func (r *RandomReviewerReassigner) Reassign(
 ) (*teamsDomain.Member, error) {
 	reviewers := r.picker.Pick(members, 1)
 	if len(reviewers) == 0 {
-		return nil, pull_requests.ErrNotEnoughMembers
+		return nil, domain.ErrNotEnoughMembers
 	}
 
 	return &reviewers[0], nil

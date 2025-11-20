@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	trmpgx "github.com/avito-tech/go-transaction-manager/drivers/pgxv5/v2"
 	"github.com/gin-gonic/gin"
 	sloggin "github.com/samber/slog-gin"
 	"log/slog"
@@ -12,7 +13,7 @@ import (
 	"os/signal"
 	"reviewer-assigner/internal/config"
 	reviewerPicker "reviewer-assigner/internal/domain/pull_requests/reviewer_pickers"
-	reviewerAssigner "reviewer-assigner/internal/domain/pull_requests/reviewer_reassigner"
+	reviewerAssigner "reviewer-assigner/internal/domain/pull_requests/reviewer_reassigners"
 	prHandler "reviewer-assigner/internal/http/handlers/pull_requests"
 	teamsHandler "reviewer-assigner/internal/http/handlers/teams"
 	usersHandler "reviewer-assigner/internal/http/handlers/users"
@@ -26,6 +27,8 @@ import (
 	usersRepo "reviewer-assigner/internal/storage/users"
 	"syscall"
 	"time"
+
+	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
 )
 
 func Run(ctx context.Context, cfg *config.Config, log *slog.Logger) {
@@ -39,13 +42,14 @@ func Run(ctx context.Context, cfg *config.Config, log *slog.Logger) {
 		return
 	}
 
-	teamRepo := teamsRepo.NewPostgresTeamRepository(pool)
-	userRepo := usersRepo.NewPostgresUserRepository(pool)
-	pullRequestRepo := pullRequestsRepo.NewPostgresPullRequestRepository(pool)
+	txManager := manager.Must(trmpgx.NewDefaultFactory(pool))
 
-	teamService := teamsService.NewTeamService(log, teamRepo)
-	userService := usersService.NewUserService(log, userRepo, pullRequestRepo)
+	teamRepo := teamsRepo.NewPostgresTeamRepository(pool, trmpgx.DefaultCtxGetter)
+	userRepo := usersRepo.NewPostgresUserRepository(pool, trmpgx.DefaultCtxGetter)
+	pullRequestRepo := pullRequestsRepo.NewPostgresPullRequestRepository(pool, trmpgx.DefaultCtxGetter)
 
+	teamService := teamsService.NewTeamService(log, teamRepo, txManager)
+	userService := usersService.NewUserService(log, userRepo, pullRequestRepo, txManager)
 	pullRequestService := prService.NewPullRequestService(
 		log,
 		userRepo,
@@ -53,6 +57,7 @@ func Run(ctx context.Context, cfg *config.Config, log *slog.Logger) {
 		pullRequestRepo,
 		&reviewerPicker.RandomReviewerPicker{},
 		reviewerAssigner.NewRandomReviewerReassigner(),
+		txManager,
 	)
 
 	teamHandler := teamsHandler.NewTeamHandler(log, teamService)
@@ -113,7 +118,7 @@ func Run(ctx context.Context, cfg *config.Config, log *slog.Logger) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	if err := server.Shutdown(ctx); err != nil {
+	if err = server.Shutdown(ctx); err != nil {
 		log.Error("failed to shutdown", logger.ErrAttr(err))
 	}
 }
