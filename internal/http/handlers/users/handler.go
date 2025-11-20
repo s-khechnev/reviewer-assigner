@@ -81,5 +81,4 @@ func (h *UserHandler) GetReview(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, domainToGetReviewResponse(userID, pullRequests))
-
 }

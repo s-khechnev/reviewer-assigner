@@ -4,7 +4,6 @@ import (
 	"context"
 	"log/slog"
 	prDomain "reviewer-assigner/internal/domain/pull_requests"
-	"reviewer-assigner/internal/domain/pull_requests/reviewer_pickers"
 	teamsDomain "reviewer-assigner/internal/domain/teams"
 	usersDomain "reviewer-assigner/internal/domain/users"
 )
@@ -14,7 +13,7 @@ type UserRepository interface {
 }
 
 type TeamRepository interface {
-	GetActiveMembers(ctx context.Context, teamName string) ([]teamsDomain.Member, error)
+	GetTeam(ctx context.Context, teamName string) (*teamsDomain.Team, error)
 }
 
 type PullRequestRepository interface {
@@ -25,7 +24,11 @@ type PullRequestRepository interface {
 }
 
 type ReviewerPicker interface {
-	Pick(members []teamsDomain.Member) ([]teamsDomain.Member, error)
+	Pick(members []teamsDomain.Member, count int) []teamsDomain.Member
+}
+
+type ReviewerReassigner interface {
+	Reassign(oldReviewer *teamsDomain.Member, members []teamsDomain.Member) (newReviewer *teamsDomain.Member, err error)
 }
 
 type PullRequestService struct {
@@ -34,16 +37,18 @@ type PullRequestService struct {
 	pullRequestRepo PullRequestRepository
 
 	reviewerPicker     ReviewerPicker
-	reviewerReassigner *reviewer_pickers.RandomReviewerPicker
+	reviewerReassigner ReviewerReassigner
 
 	log *slog.Logger
 }
 
-func NewPullRequestService(log *slog.Logger,
+func NewPullRequestService(
+	log *slog.Logger,
 	userRepo UserRepository,
 	teamRepo TeamRepository,
 	pullRequestRepo PullRequestRepository,
 	reviewerPicker ReviewerPicker,
+	reviewerReassigner ReviewerReassigner,
 ) *PullRequestService {
 	return &PullRequestService{
 		userRepo:        userRepo,
@@ -51,7 +56,7 @@ func NewPullRequestService(log *slog.Logger,
 		pullRequestRepo: pullRequestRepo,
 
 		reviewerPicker:     reviewerPicker,
-		reviewerReassigner: reviewer_pickers.NewRandomReviewerPicker(1),
+		reviewerReassigner: reviewerReassigner,
 
 		log: log,
 	}

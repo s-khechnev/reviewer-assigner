@@ -1,4 +1,4 @@
-package reviewer_pickers
+package pull_requests
 
 import "errors"
 

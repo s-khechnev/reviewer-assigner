@@ -11,9 +11,13 @@ import (
 	"os"
 	"os/signal"
 	"reviewer-assigner/internal/config"
+	reviewerPicker "reviewer-assigner/internal/domain/pull_requests/reviewer_pickers"
+	reviewerAssigner "reviewer-assigner/internal/domain/pull_requests/reviewer_reassigner"
+	prHandler "reviewer-assigner/internal/http/handlers/pull_requests"
 	teamsHandler "reviewer-assigner/internal/http/handlers/teams"
 	usersHandler "reviewer-assigner/internal/http/handlers/users"
 	"reviewer-assigner/internal/logger"
+	prService "reviewer-assigner/internal/service/pull_requests"
 	teamsService "reviewer-assigner/internal/service/teams"
 	usersService "reviewer-assigner/internal/service/users"
 	"reviewer-assigner/internal/storage/postgres"
@@ -42,8 +46,18 @@ func Run(ctx context.Context, cfg *config.Config, log *slog.Logger) {
 	teamService := teamsService.NewTeamService(log, teamRepo)
 	userService := usersService.NewUserService(log, userRepo, pullRequestRepo)
 
+	pullRequestService := prService.NewPullRequestService(
+		log,
+		userRepo,
+		teamRepo,
+		pullRequestRepo,
+		&reviewerPicker.RandomReviewerPicker{},
+		reviewerAssigner.NewRandomReviewerReassigner(),
+	)
+
 	teamHandler := teamsHandler.NewTeamHandler(log, teamService)
 	userHandler := usersHandler.NewUserHandler(log, userService)
+	pullRequestHandler := prHandler.NewPullRequestHandler(log, pullRequestService)
 
 	r := gin.New()
 
@@ -67,6 +81,13 @@ func Run(ctx context.Context, cfg *config.Config, log *slog.Logger) {
 		userGroup := r.Group("/users")
 		userGroup.POST("/setIsActive", userHandler.SetIsActive)
 		userGroup.GET("/getReview", userHandler.GetReview)
+	}
+
+	{
+		pullRequestGroup := r.Group("/pullRequest")
+		pullRequestGroup.POST("/create", pullRequestHandler.Create)
+		pullRequestGroup.POST("/merge", pullRequestHandler.Merge)
+		pullRequestGroup.POST("/reassign", pullRequestHandler.Reassign)
 	}
 
 	server := &http.Server{

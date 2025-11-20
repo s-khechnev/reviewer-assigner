@@ -31,6 +31,9 @@ func (r *PostgresUserRepository) Get(ctx context.Context, userID string) (*users
 	err := r.pool.
 		QueryRow(ctx, query, userID).
 		Scan(&user.ID, &user.Name, &user.IsActive, &user.TeamName)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, service.ErrUserNotFound
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -40,8 +43,8 @@ func (r *PostgresUserRepository) Get(ctx context.Context, userID string) (*users
 
 func (r *PostgresUserRepository) SetIsActive(ctx context.Context, userID string, isActive bool) (*usersDomain.User, error) {
 	const query = `
-    UPDATE users 
-    SET is_active = $1 
+    UPDATE users
+    SET is_active = $1
     WHERE user_id = $2
     RETURNING user_id, name, is_active, (SELECT name FROM teams WHERE id = team_id) as team_name
     `
