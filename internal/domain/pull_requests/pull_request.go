@@ -37,6 +37,10 @@ type ReviewerReassigner interface {
 }
 
 func (p *PullRequest) AssignReviewers(members []teamsDomain.Member, picker ReviewerPicker, count int) error {
+	if p.Status == StatusMerged {
+		return domain.ErrPullRequestAlreadyMerged
+	}
+
 	const activeMembersDefaultCap = 2
 	activeMembersExcludeAuthor := make([]teamsDomain.Member, 0, activeMembersDefaultCap)
 	for _, member := range members {
@@ -70,6 +74,10 @@ func (p *PullRequest) Merge() error {
 }
 
 func (p *PullRequest) Reassign(oldReviewer *teamsDomain.Member, members []teamsDomain.Member, reassigner ReviewerReassigner) error {
+	if p.Status == StatusMerged {
+		return domain.ErrPullRequestAlreadyMerged
+	}
+
 	isAlreadyReviewer := func(member *teamsDomain.Member) bool {
 		return slices.Index(p.AssignedReviewers, member.ID) != -1
 	}

@@ -34,6 +34,10 @@ func (t *Team) UpdateMembers(updatedMembers []Member) error {
 }
 
 func hasSameMemberIDs(oldMembers, newMembers []Member) bool {
+	if len(newMembers) == 0 && len(oldMembers) != 0 {
+		return false
+	}
+
 	for _, newMember := range newMembers {
 		if !slices.ContainsFunc(oldMembers, func(m Member) bool {
 			return m.ID == newMember.ID
