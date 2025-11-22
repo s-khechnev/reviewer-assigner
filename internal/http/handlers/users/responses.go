@@ -5,7 +5,8 @@ import (
 	usersDomain "reviewer-assigner/internal/domain/users"
 )
 
-type UserSetIsActiveResponse struct {
+type SetIsActiveResponse struct {
+	UserResponse `json:"user"`
 }
 
 type UserResponse struct {
@@ -27,7 +28,13 @@ type PullRequestResponse struct {
 	Status   string `json:"status"`
 }
 
-func domainToGetReviewResponse(userID string, prs []prDomain.PullRequestShort) GetReviewResponse {
+func domainToSetIsActiveResponse(user *usersDomain.User) *SetIsActiveResponse {
+	return &SetIsActiveResponse{
+		UserResponse: *domainToUserResponse(user),
+	}
+}
+
+func domainToGetReviewResponse(userID string, prs []prDomain.PullRequestShort) *GetReviewResponse {
 	prsResponse := make([]PullRequestResponse, 0, len(prs))
 	for _, pr := range prs {
 		prsResponse = append(prsResponse, PullRequestResponse{
@@ -38,14 +45,14 @@ func domainToGetReviewResponse(userID string, prs []prDomain.PullRequestShort) G
 		})
 	}
 
-	return GetReviewResponse{
+	return &GetReviewResponse{
 		UserID:       userID,
 		PullRequests: prsResponse,
 	}
 }
 
-func domainToUserResponse(u *usersDomain.User) UserResponse {
-	return UserResponse{
+func domainToUserResponse(u *usersDomain.User) *UserResponse {
+	return &UserResponse{
 		UserID:   u.ID,
 		Name:     u.Name,
 		TeamName: u.TeamName,

@@ -54,6 +54,9 @@ func (s *BaseSuite) SetupSuite() {
 	db, err := sql.Open("postgres", psqlContainer.GetDSN())
 	s.Require().NoError(err)
 
+	err = goose.SetDialect("postgres")
+	s.Require().NoError(err)
+
 	err = goose.Up(db, migrationsPath)
 	s.Require().NoError(err)
 

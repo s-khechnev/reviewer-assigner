@@ -3,6 +3,7 @@ package users
 import (
 	"errors"
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 	"log/slog"
 	"net/http"
 	"reviewer-assigner/internal/http/handlers"
@@ -10,6 +11,8 @@ import (
 	"reviewer-assigner/internal/service"
 	"reviewer-assigner/internal/service/users"
 )
+
+var validate = validator.New()
 
 type UserHandler struct {
 	userService *users.UserService
@@ -37,9 +40,16 @@ func (h *UserHandler) SetIsActive(c *gin.Context) {
 
 	log.Info("request decoded", slog.Any("request", req))
 
-	user, err := h.userService.SetIsActive(c.Copy(), req.UserID, req.IsActive)
+	if err := validate.Struct(req); err != nil {
+		log.Warn("validation error", logger.ErrAttr(err))
+
+		c.JSON(http.StatusUnprocessableEntity, handlers.NewErrorResponse(handlers.ErrCodeInvalidBody))
+		return
+	}
+
+	user, err := h.userService.SetIsActive(c.Copy(), req.UserID, *req.IsActive)
 	if errors.Is(err, service.ErrUserNotFound) {
-		c.JSON(http.StatusBadRequest, handlers.NewErrorResponse(handlers.ErrCodeResourceNotFound))
+		c.JSON(http.StatusNotFound, handlers.NewErrorResponse(handlers.ErrCodeResourceNotFound))
 		return
 	}
 	if err != nil {
@@ -47,7 +57,7 @@ func (h *UserHandler) SetIsActive(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"user": domainToUserResponse(user)})
+	c.JSON(http.StatusOK, domainToSetIsActiveResponse(user))
 }
 
 func (h *UserHandler) GetReview(c *gin.Context) {
