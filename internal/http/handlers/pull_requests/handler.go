@@ -3,6 +3,7 @@ package pull_requests
 import (
 	"errors"
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 	"log/slog"
 	"net/http"
 	"reviewer-assigner/internal/http/handlers"
@@ -10,6 +11,8 @@ import (
 	"reviewer-assigner/internal/service"
 	prs "reviewer-assigner/internal/service/pull_requests"
 )
+
+var validate = validator.New()
 
 type PullRequestHandler struct {
 	pullRequestService *prs.PullRequestService
@@ -37,9 +40,16 @@ func (h *PullRequestHandler) Create(c *gin.Context) {
 
 	log.Info("request decoded", slog.Any("request", req))
 
+	if err := validate.Struct(req); err != nil {
+		log.Warn("validation error", logger.ErrAttr(err))
+
+		c.JSON(http.StatusUnprocessableEntity, handlers.NewErrorResponse(handlers.ErrCodeInvalidBody))
+		return
+	}
+
 	pullRequest, err := h.pullRequestService.Create(c.Copy(), req.ID, req.Name, req.AuthorID)
 	if errors.Is(err, service.ErrUserNotFound) || errors.Is(err, service.ErrTeamNotFound) {
-		c.JSON(http.StatusBadRequest, handlers.NewErrorResponse(handlers.ErrCodeResourceNotFound))
+		c.JSON(http.StatusNotFound, handlers.NewErrorResponse(handlers.ErrCodeResourceNotFound))
 		return
 	}
 	if errors.Is(err, service.ErrPullRequestAlreadyExists) {
@@ -51,7 +61,7 @@ func (h *PullRequestHandler) Create(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"pr": domainToPullRequestResponse(pullRequest)})
+	c.JSON(http.StatusCreated, domainToCreatePullRequestResponse(pullRequest))
 }
 
 func (h *PullRequestHandler) Merge(c *gin.Context) {

@@ -38,10 +38,11 @@ func (l *FixtureLoader) LoadString(path string) string {
 	return string(data)
 }
 
-func (l *FixtureLoader) LoadTemplate(path string, data any) string {
-	tempData := l.LoadString(path)
+func (l *FixtureLoader) LoadTemplate(s string, data any) string {
+	//tempData := l.LoadString(path)
+	const defaultName = "default"
 
-	temp, err := template.New(path).Parse(tempData)
+	temp, err := template.New(defaultName).Parse(s)
 	require.NoError(l.t, err)
 
 	buf := bytes.Buffer{}

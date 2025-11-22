@@ -1,0 +1,7 @@
+# pull_requests
+- id: 1
+  pull_request_id: "pr_already_exists_id"
+  name: "Implement payment gateway integration"
+  author_id: "u1_Alice"
+  status: "OPEN"
+  created_at: "2024-01-15 10:30:00"
