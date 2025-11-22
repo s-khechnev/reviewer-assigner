@@ -2,7 +2,9 @@ package integration_tests
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/json"
+	"github.com/go-testfixtures/testfixtures/v3"
 	"github.com/stretchr/testify/suite"
 	"net/http"
 	"reviewer-assigner/internal/http/handlers"
@@ -23,7 +25,16 @@ func (s *TeamAddSuite) TearDownSuite() {
 }
 
 func (s *TeamAddSuite) SetupTest() {
-	s.BaseSuite.SetupTest()
+	db, err := sql.Open("postgres", s.psqlContainer.GetDSN())
+	s.Require().NoError(err)
+
+	fixtures, err := testfixtures.New(
+		testfixtures.Database(db),
+		testfixtures.Dialect("postgres"),
+		testfixtures.Directory("fixtures/storage/team_add"),
+	)
+	s.Require().NoError(err)
+	s.Require().NoError(fixtures.Load())
 }
 
 func TestTeamAddSuite_Run(t *testing.T) {
@@ -114,28 +125,10 @@ func (s *TeamAddSuite) TestAddTeamDefault() {
 	JSONEq(s.T(), expected, response)
 }
 
-func (s *TeamAddSuite) TestAddTeamDuplicate() {
-	firstRequestBody := `
+func (s *TeamAddSuite) TestAddTeamAlreadyExists() {
+	requestBody := `
 {
-	"team_name": "backend",
-	"members": [
-		{
-			"user_id": "u1",
-			"username": "Alice",
-			"is_active": true
-		}
-	]
-}
-`
-
-	res, err := s.server.Client().Post(s.server.URL+"/team/add", "", bytes.NewBufferString(firstRequestBody))
-	s.Require().NoError(err)
-	defer res.Body.Close()
-	s.Require().Equal(http.StatusCreated, res.StatusCode)
-
-	duplicateRequestBody := `
-{
-	"team_name": "backend", 
+	"team_name": "backend_already_exists", 
 	"members": [
 		{
 			"user_id": "u2",
@@ -146,7 +139,7 @@ func (s *TeamAddSuite) TestAddTeamDuplicate() {
 }
 `
 
-	res, err = s.server.Client().Post(s.server.URL+"/team/add", "", bytes.NewBufferString(duplicateRequestBody))
+	res, err := s.server.Client().Post(s.server.URL+"/team/add", "", bytes.NewBufferString(requestBody))
 	s.Require().NoError(err)
 	defer res.Body.Close()
 
@@ -160,7 +153,7 @@ func (s *TeamAddSuite) TestAddTeamDuplicate() {
 {
   "error": {
     "code": "TEAM_EXISTS",
-    "message": "backend already exists"
+    "message": "backend_already_exists already exists"
   }
 }
 `
@@ -384,48 +377,26 @@ func (s *TeamAddSuite) TestAddTeamMissingRequiredFields() {
 }
 
 func (s *TeamAddSuite) TestAddTeamUpdatesExistingUsers() {
-	firstRequestBody := `
+	// обновляем только двух из трёх
+	requestBody := `
 {
-	"team_name": "team1",
+	"team_name": "backend_already_exists",
 	"members": [
 		{
-			"user_id": "u1",
-			"username": "OldName",
-			"is_active": true
-		},
-		{
-			"user_id": "u2",
-			"username": "User2",
-			"is_active": false
-		}
-	]
-}
-`
-
-	res, err := s.server.Client().Post(s.server.URL+"/team/add", "", bytes.NewBufferString(firstRequestBody))
-	s.Require().NoError(err)
-	defer res.Body.Close()
-	s.Require().Equal(http.StatusCreated, res.StatusCode)
-
-	secondRequestBody := `
-{
-	"team_name": "team1",
-	"members": [
-		{
-			"user_id": "u1",
-			"username": "NewName",
+			"user_id": "u1_Alice",
+			"username": "Alice_NewName",
 			"is_active": false
 		},
 		{
-			"user_id": "u2",
-			"username": "NewName2",
+			"user_id": "u2_Bob",
+			"username": "Bob_NewName2",
 			"is_active": true
 		}
 	]
 }
 `
 
-	res, err = s.server.Client().Post(s.server.URL+"/team/add", "", bytes.NewBufferString(secondRequestBody))
+	res, err := s.server.Client().Post(s.server.URL+"/team/add", "", bytes.NewBufferString(requestBody))
 	s.Require().NoError(err)
 	defer res.Body.Close()
 
@@ -435,56 +406,55 @@ func (s *TeamAddSuite) TestAddTeamUpdatesExistingUsers() {
 	err = json.NewDecoder(res.Body).Decode(&response)
 	s.Require().NoError(err)
 
-	s.Require().Equal("team1", response.TeamName)
-	s.Require().Len(response.Members, 2)
+	s.Require().Equal("backend_already_exists", response.TeamName)
+	s.Require().Len(response.Members, 3)
 
-	s.Require().Equal("u1", response.Members[0].ID)
-	s.Require().Equal("NewName", response.Members[0].Name)
-	s.Require().False(response.Members[0].IsActive)
+	expected := map[string]teamsHandler.MemberResponse{
+		"u1_Alice": {
+			ID:       "u1_Alice",
+			Name:     "Alice_NewName",
+			IsActive: false,
+		},
+		"u2_Bob": {
+			ID:       "u2_Bob",
+			Name:     "Bob_NewName2",
+			IsActive: true,
+		},
+		"u3_John": {
+			ID:       "u3_John",
+			Name:     "John",
+			IsActive: true,
+		},
+	}
 
-	s.Require().Equal("u2", response.Members[1].ID)
-	s.Require().Equal("NewName2", response.Members[1].Name)
-	s.Require().True(response.Members[1].IsActive)
+	for _, member := range response.Members {
+		expectedMember, ok := expected[member.ID]
+		s.Require().True(ok)
+		s.Require().Equal(member.Name, expectedMember.Name)
+		s.Require().Equal(member.IsActive, expectedMember.IsActive)
+	}
 }
 
-func (s *TeamAddSuite) TestAddTeamUpdatesOnlyOneExistingUsers() {
-	firstRequestBody := `
+func (s *TeamAddSuite) TestAddTeamUpdatesAllUsers() {
+	requestBody := `
 {
-	"team_name": "team1",
+	"team_name": "frontend",
 	"members": [
 		{
-			"user_id": "u1",
-			"username": "OldName",
+			"user_id": "u4_Vanya",
+			"username": "newNameVanya",
 			"is_active": true
 		},
 		{
-			"user_id": "u2",
-			"username": "OldUser2",
-			"is_active": false
+			"user_id": "u5_Petya",
+			"username": "newNamePetya",
+			"is_active": true
 		}
 	]
 }
 `
 
-	res, err := s.server.Client().Post(s.server.URL+"/team/add", "", bytes.NewBufferString(firstRequestBody))
-	s.Require().NoError(err)
-	defer res.Body.Close()
-	s.Require().Equal(http.StatusCreated, res.StatusCode)
-
-	secondRequestBody := `
-{
-	"team_name": "team1",
-	"members": [
-		{
-			"user_id": "u1",
-			"username": "NewName",
-			"is_active": false
-		}
-	]
-}
-`
-
-	res, err = s.server.Client().Post(s.server.URL+"/team/add", "", bytes.NewBufferString(secondRequestBody))
+	res, err := s.server.Client().Post(s.server.URL+"/team/add", "", bytes.NewBufferString(requestBody))
 	s.Require().NoError(err)
 	defer res.Body.Close()
 
@@ -494,14 +464,26 @@ func (s *TeamAddSuite) TestAddTeamUpdatesOnlyOneExistingUsers() {
 	err = json.NewDecoder(res.Body).Decode(&response)
 	s.Require().NoError(err)
 
-	s.Require().Equal("team1", response.TeamName)
+	s.Require().Equal("frontend", response.TeamName)
 	s.Require().Len(response.Members, 2)
 
-	s.Require().Equal("u1", response.Members[0].ID)
-	s.Require().Equal("NewName", response.Members[0].Name)
-	s.Require().False(response.Members[0].IsActive)
+	expected := map[string]teamsHandler.MemberResponse{
+		"u4_Vanya": {
+			ID:       "u4_Vanya",
+			Name:     "newNameVanya",
+			IsActive: true,
+		},
+		"u5_Petya": {
+			ID:       "u5_Petya",
+			Name:     "newNamePetya",
+			IsActive: true,
+		},
+	}
 
-	s.Require().Equal("u2", response.Members[1].ID)
-	s.Require().Equal("OldUser2", response.Members[1].Name)
-	s.Require().False(response.Members[1].IsActive)
+	for _, member := range response.Members {
+		expectedMember, ok := expected[member.ID]
+		s.Require().True(ok)
+		s.Require().Equal(member.Name, expectedMember.Name)
+		s.Require().Equal(member.IsActive, expectedMember.IsActive)
+	}
 }

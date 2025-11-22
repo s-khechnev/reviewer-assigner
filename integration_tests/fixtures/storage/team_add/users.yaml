@@ -1,0 +1,30 @@
+- id: 1
+  user_id: "u1_Alice"
+  name: "Alice"
+  team_id: 1
+  is_active: true
+
+- id: 2
+  user_id: "u2_Bob"
+  name: "Bob"
+  team_id: 1
+  is_active: false
+
+- id: 3
+  user_id: "u3_John"
+  name: "John"
+  team_id: 1
+  is_active: true
+
+# frontend
+- id: 4
+  user_id: "u4_Vanya"
+  name: "Vanya"
+  team_id: 2
+  is_active: false
+
+- id: 5
+  user_id: "u5_Petya"
+  name: "Petya"
+  team_id: 2
+  is_active: false
