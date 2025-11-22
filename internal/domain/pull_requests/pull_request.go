@@ -73,9 +73,13 @@ func (p *PullRequest) Merge() error {
 	return nil
 }
 
-func (p *PullRequest) Reassign(oldReviewer *teamsDomain.Member, members []teamsDomain.Member, reassigner ReviewerReassigner) error {
+func (p *PullRequest) Reassign(
+	oldReviewer *teamsDomain.Member,
+	members []teamsDomain.Member,
+	reassigner ReviewerReassigner,
+) (string, error) {
 	if p.Status == StatusMerged {
-		return domain.ErrPullRequestAlreadyMerged
+		return "", domain.ErrPullRequestAlreadyMerged
 	}
 
 	isAlreadyReviewer := func(member *teamsDomain.Member) bool {
@@ -95,7 +99,7 @@ func (p *PullRequest) Reassign(oldReviewer *teamsDomain.Member, members []teamsD
 
 	newReviewer, err := reassigner.Reassign(oldReviewer, activeMembersExcludeAuthorReviewers)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	for i, reviewerID := range p.AssignedReviewers {
@@ -105,5 +109,5 @@ func (p *PullRequest) Reassign(oldReviewer *teamsDomain.Member, members []teamsD
 		}
 	}
 
-	return nil
+	return newReviewer.ID, nil
 }

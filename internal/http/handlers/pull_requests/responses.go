@@ -9,6 +9,15 @@ type CreatePullRequestResponse struct {
 	PullRequestResponse `json:"pr"`
 }
 
+type MergePullRequestResponse struct {
+	PullRequestResponse `json:"pr"`
+}
+
+type ReassignPullRequestResponse struct {
+	PullRequestResponse `json:"pr"`
+	ReplacedBy          string `json:"replaced_by"`
+}
+
 type PullRequestResponse struct {
 	ID                string     `json:"pull_request_id"`
 	Name              string     `json:"pull_request_name"`
@@ -22,6 +31,19 @@ type PullRequestResponse struct {
 func domainToCreatePullRequestResponse(pr *prDomain.PullRequest) *CreatePullRequestResponse {
 	return &CreatePullRequestResponse{
 		PullRequestResponse: *domainToPullRequestResponse(pr),
+	}
+}
+
+func domainToMergePullRequestResponse(pr *prDomain.PullRequest) *MergePullRequestResponse {
+	return &MergePullRequestResponse{
+		PullRequestResponse: *domainToPullRequestResponse(pr),
+	}
+}
+
+func domainToReassignPullRequestResponse(pr *prDomain.PullRequest, replacedBy string) *ReassignPullRequestResponse {
+	return &ReassignPullRequestResponse{
+		PullRequestResponse: *domainToPullRequestResponse(pr),
+		ReplacedBy:          replacedBy,
 	}
 }
 

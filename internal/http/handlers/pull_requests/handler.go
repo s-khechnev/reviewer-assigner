@@ -80,7 +80,7 @@ func (h *PullRequestHandler) Merge(c *gin.Context) {
 
 	pullRequest, err := h.pullRequestService.Merge(c.Copy(), req.ID)
 	if errors.Is(err, service.ErrPullRequestNotFound) {
-		c.JSON(http.StatusBadRequest, handlers.NewErrorResponse(handlers.ErrCodeResourceNotFound))
+		c.JSON(http.StatusNotFound, handlers.NewErrorResponse(handlers.ErrCodeResourceNotFound))
 		return
 	}
 	if err != nil {
@@ -88,7 +88,7 @@ func (h *PullRequestHandler) Merge(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"pr": domainToPullRequestResponse(pullRequest)})
+	c.JSON(http.StatusOK, domainToMergePullRequestResponse(pullRequest))
 }
 
 func (h *PullRequestHandler) Reassign(c *gin.Context) {
@@ -105,7 +105,7 @@ func (h *PullRequestHandler) Reassign(c *gin.Context) {
 
 	log.Info("request decoded", slog.Any("request", req))
 
-	pullRequest, err := h.pullRequestService.Reassign(c.Copy(), req.ID, req.OldReviewerID)
+	pullRequest, replacedBy, err := h.pullRequestService.Reassign(c.Copy(), req.ID, req.OldReviewerID)
 	if errors.Is(err, service.ErrPullRequestNotFound) {
 		c.JSON(http.StatusBadRequest, handlers.NewErrorResponse(handlers.ErrCodeResourceNotFound))
 		return
@@ -127,5 +127,5 @@ func (h *PullRequestHandler) Reassign(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"pr": domainToPullRequestResponse(pullRequest)})
+	c.JSON(http.StatusOK, domainToReassignPullRequestResponse(pullRequest, replacedBy))
 }

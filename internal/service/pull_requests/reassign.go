@@ -14,7 +14,7 @@ import (
 
 func (s *PullRequestService) Reassign(
 	ctx context.Context, pullRequestID, oldReviewerID string,
-) (pullRequest *prDomain.PullRequest, err error) {
+) (pullRequest *prDomain.PullRequest, replacedBy string, err error) {
 	const op = "services.pull_requests.Reassign"
 	log := s.log.With(
 		slog.String("op", op),
@@ -77,7 +77,7 @@ func (s *PullRequestService) Reassign(
 
 		log.Info("got team", slog.Any("team", team))
 
-		err = pullRequest.Reassign(&oldReviewer.Member, team.Members, s.reviewerReassigner)
+		replacedBy, err = pullRequest.Reassign(&oldReviewer.Member, team.Members, s.reviewerReassigner)
 		if errors.Is(err, domain.ErrNotEnoughMembers) {
 			log.Error("not enough active members")
 
@@ -99,5 +99,5 @@ func (s *PullRequestService) Reassign(
 		return nil
 	})
 
-	return pullRequest, err
+	return pullRequest, replacedBy, err
 }

@@ -1,0 +1,7 @@
+# pull_requests
+- id: 1
+  pull_request_id: "pr_opened_id"
+  name: "Opened PR"
+  author_id: "u1_Alice"
+  status: "OPEN"
+  created_at: "2024-01-15 10:30:00"
