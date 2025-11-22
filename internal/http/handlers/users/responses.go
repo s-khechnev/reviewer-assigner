@@ -5,6 +5,9 @@ import (
 	usersDomain "reviewer-assigner/internal/domain/users"
 )
 
+type UserSetIsActiveResponse struct {
+}
+
 type UserResponse struct {
 	UserID   string `json:"user_id"`
 	Name     string `json:"username"`
