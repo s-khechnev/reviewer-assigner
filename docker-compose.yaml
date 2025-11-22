@@ -11,6 +11,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      goose:
+        condition: service_completed_successfully
 
   db:
     image: postgres:18
@@ -28,6 +30,16 @@ services:
       interval: 1s
       timeout: 1s
       retries: 5
+
+  goose:
+    build:
+      context: .
+      dockerfile: Dockerfile.goose
+    environment:
+      GOOSE_DBSTRING: ${GOOSE_DBSTRING}
+    depends_on:
+      db:
+        condition: service_healthy
 
 volumes:
   postgres_data:
