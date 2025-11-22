@@ -3,6 +3,7 @@ package teams
 import (
 	"errors"
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 	"log/slog"
 	"net/http"
 	"reviewer-assigner/internal/http/handlers"
@@ -10,6 +11,8 @@ import (
 	"reviewer-assigner/internal/service"
 	"reviewer-assigner/internal/service/teams"
 )
+
+var validate = validator.New()
 
 type TeamHandler struct {
 	teamService *teams.TeamService
@@ -29,13 +32,20 @@ func (h *TeamHandler) AddTeam(c *gin.Context) {
 
 	var req AddTeamRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		log.Warn("invalid json body", logger.ErrAttr(err))
+		log.Warn("failed to decode json body", logger.ErrAttr(err))
 
 		c.JSON(http.StatusBadRequest, handlers.NewErrorResponse(handlers.ErrCodeInvalidJSON))
 		return
 	}
 
 	log.Info("request decoded", slog.Any("request", req))
+
+	if err := validate.Struct(req); err != nil {
+		log.Warn("invalid json body", logger.ErrAttr(err))
+
+		c.JSON(http.StatusUnprocessableEntity, handlers.NewErrorResponse(handlers.ErrCodeInvalidBody))
+		return
+	}
 
 	newTeam, err := h.teamService.AddTeam(c.Copy(), req.TeamName, membersToDomain(req.Members))
 	if errors.Is(err, service.ErrTeamAlreadyExists) {

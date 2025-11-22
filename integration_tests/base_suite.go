@@ -31,7 +31,7 @@ const migrationsPath = "../migrations/postgres"
 
 var out = io.Discard
 
-// var out = os.Stdout
+//var out = os.Stdout
 
 type BaseSuite struct {
 	suite.Suite
@@ -97,4 +97,16 @@ func (s *BaseSuite) TearDownSuite() {
 	s.Require().NoError(s.psqlContainer.Terminate(ctx))
 
 	s.server.Close()
+}
+
+func (s *BaseSuite) SetupTest() {
+	db, err := sql.Open("postgres", s.psqlContainer.GetDSN())
+	s.Require().NoError(err)
+
+	goose.SetLogger(goose.NopLogger())
+	err = goose.Reset(db, migrationsPath)
+	s.Require().NoError(err)
+
+	err = goose.Up(db, migrationsPath)
+	s.Require().NoError(err)
 }

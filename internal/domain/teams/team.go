@@ -16,6 +16,20 @@ type Team struct {
 	Members []Member
 }
 
+func (m *Member) Equal(o *Member) bool {
+	if m.IsActive != o.IsActive {
+		return false
+	}
+	if m.ID != o.ID {
+		return false
+	}
+	if m.Name != o.Name {
+		return false
+	}
+
+	return true
+}
+
 func (t *Team) UpdateMembers(updatedMembers []Member) error {
 	if !hasSameMemberIDs(t.Members, updatedMembers) {
 		return domain.ErrTeamMembersMismatch
@@ -26,7 +40,10 @@ func (t *Team) UpdateMembers(updatedMembers []Member) error {
 			return m.ID == updated.ID
 		})
 		if idx != -1 {
-			t.Members[idx] = updated
+			// check if really updated
+			if !t.Members[idx].Equal(&updated) {
+				t.Members[idx] = updated
+			}
 		}
 	}
 

@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin"
 )
 
 type ErrCode string
@@ -10,6 +9,7 @@ type ErrCode string
 const (
 	ErrCodeInvalidJSON       ErrCode = "INVALID_JSON"
 	ErrCodeInvalidQueryParam ErrCode = "INVALID_QUERY_PARAM"
+	ErrCodeInvalidBody       ErrCode = "INVALID_BODY"
 
 	ErrCodeTeamExists ErrCode = "TEAM_EXISTS"
 
@@ -26,6 +26,7 @@ const (
 var errCodeMessages = map[ErrCode]string{
 	ErrCodeInvalidJSON:       "invalid JSON format",
 	ErrCodeInvalidQueryParam: "invalid query parameter",
+	ErrCodeInvalidBody:       "invalid request body",
 
 	ErrCodeTeamExists: "%s already exists",
 
@@ -37,6 +38,15 @@ var errCodeMessages = map[ErrCode]string{
 	ErrCodeResourceNotFound: "resource not found",
 }
 
+type ErrorResponse struct {
+	Error ErrorDetails `json:"error"`
+}
+
+type ErrorDetails struct {
+	Code    ErrCode `json:"code"`
+	Message string  `json:"message"`
+}
+
 func (e ErrCode) Message(args ...any) string {
 	if msg, ok := errCodeMessages[e]; ok {
 		return fmt.Sprintf(msg, args...)
@@ -45,11 +55,11 @@ func (e ErrCode) Message(args ...any) string {
 	return "Unknown error"
 }
 
-func NewErrorResponse(code ErrCode, args ...any) gin.H {
-	return gin.H{
-		"error": gin.H{
-			"code":    code,
-			"message": code.Message(args...),
+func NewErrorResponse(code ErrCode, args ...any) *ErrorResponse {
+	return &ErrorResponse{
+		Error: ErrorDetails{
+			Code:    code,
+			Message: code.Message(args...),
 		},
 	}
 }
