@@ -107,7 +107,7 @@ func (h *PullRequestHandler) Reassign(c *gin.Context) {
 
 	pullRequest, replacedBy, err := h.pullRequestService.Reassign(c.Copy(), req.ID, req.OldReviewerID)
 	if errors.Is(err, service.ErrPullRequestNotFound) {
-		c.JSON(http.StatusBadRequest, handlers.NewErrorResponse(handlers.ErrCodeResourceNotFound))
+		c.JSON(http.StatusNotFound, handlers.NewErrorResponse(handlers.ErrCodeResourceNotFound))
 		return
 	}
 	if errors.Is(err, service.ErrPullRequestAlreadyMerged) {
@@ -119,7 +119,7 @@ func (h *PullRequestHandler) Reassign(c *gin.Context) {
 		return
 	}
 	if errors.Is(err, service.ErrPullRequestNoCandidates) {
-		c.JSON(http.StatusBadRequest, handlers.NewErrorResponse(handlers.ErrCodePullRequestNoCandidates))
+		c.JSON(http.StatusConflict, handlers.NewErrorResponse(handlers.ErrCodePullRequestNoCandidate))
 		return
 	}
 	if err != nil {

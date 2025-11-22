@@ -1,6 +1,19 @@
-# Bob and John
+# payments
+# Bob and John - pr_opened_id
 - pull_request_id: 1
   reviewer_id: 2
 
 - pull_request_id: 1
   reviewer_id: 3
+
+# Bob and Mike - pr_merged_id
+- pull_request_id: 2
+  reviewer_id: 2
+
+- pull_request_id: 2
+  reviewer_id: 4
+
+# infa
+# infra_Azat - pr_no_candidates_for_reassign
+- pull_request_id: 3
+  reviewer_id: 6

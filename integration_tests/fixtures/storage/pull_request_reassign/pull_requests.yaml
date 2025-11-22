@@ -1,7 +1,23 @@
-# pull_requests
+# payments
 - id: 1
   pull_request_id: "pr_opened_id"
   name: "Opened PR"
   author_id: "u1_Alice"
   status: "OPEN"
   created_at: "2024-01-15 10:30:00"
+
+- id: 2
+  pull_request_id: "pr_merged_id"
+  name: "Merged PR"
+  author_id: "u1_Alice"
+  status: "MERGED"
+  created_at: "2024-01-15 10:30:00"
+  merged_at: "2024-01-15 10:33:00"
+
+# infra
+- id: 3
+  pull_request_id: "pr_no_candidates_for_reassign"
+  name: "No candidates for reassign"
+  author_id: "infra_Ivan"
+  status: "OPEN"
+  created_at: "2024-01-15 10:31:00"

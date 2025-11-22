@@ -13,10 +13,10 @@ const (
 
 	ErrCodeTeamExists ErrCode = "TEAM_EXISTS"
 
-	ErrCodePullRequestExists       ErrCode = "PR_EXISTS"
-	ErrCodePullRequestMerged       ErrCode = "PR_MERGED"
-	ErrCodePullRequestNotAssigned  ErrCode = "NOT_ASSIGNED"
-	ErrCodePullRequestNoCandidates ErrCode = "NO_CANDIDATES"
+	ErrCodePullRequestExists      ErrCode = "PR_EXISTS"
+	ErrCodePullRequestMerged      ErrCode = "PR_MERGED"
+	ErrCodePullRequestNotAssigned ErrCode = "NOT_ASSIGNED"
+	ErrCodePullRequestNoCandidate ErrCode = "NO_CANDIDATE"
 
 	ErrCodeResourceNotFound ErrCode = "NOT_FOUND"
 
@@ -30,10 +30,10 @@ var errCodeMessages = map[ErrCode]string{
 
 	ErrCodeTeamExists: "%s already exists",
 
-	ErrCodePullRequestExists:       "PR %s already exists",
-	ErrCodePullRequestMerged:       "cannot reassign on merged PR",
-	ErrCodePullRequestNotAssigned:  "reviewer is not assigned to this PR",
-	ErrCodePullRequestNoCandidates: "no active replacement candidate in team",
+	ErrCodePullRequestExists:      "PR %s already exists",
+	ErrCodePullRequestMerged:      "cannot reassign on merged PR",
+	ErrCodePullRequestNotAssigned: "reviewer is not assigned to this PR",
+	ErrCodePullRequestNoCandidate: "no active replacement candidate in team",
 
 	ErrCodeResourceNotFound: "resource not found",
 }

@@ -1,3 +1,4 @@
+# payments
 - id: 1
   user_id: "u1_Alice"
   name: "Alice"
@@ -20,4 +21,17 @@
   user_id: "u4_Mike"
   name: "Mike"
   team_id: 1
+  is_active: true
+
+# infra
+- id: 5
+  user_id: "infra_Ivan"
+  name: "Ivan"
+  team_id: 2
+  is_active: true
+
+- id: 6
+  user_id: "infra_Azat"
+  name: "Azat"
+  team_id: 2
   is_active: true
