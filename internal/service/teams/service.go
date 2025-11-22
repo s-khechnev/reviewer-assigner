@@ -2,9 +2,10 @@ package teams
 
 import (
 	"context"
-	"github.com/avito-tech/go-transaction-manager/trm/v2"
 	"log/slog"
 	teamsDomain "reviewer-assigner/internal/domain/teams"
+
+	"github.com/avito-tech/go-transaction-manager/trm/v2"
 )
 
 type TeamRepository interface {

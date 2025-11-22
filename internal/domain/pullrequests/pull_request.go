@@ -1,4 +1,4 @@
-package pull_requests
+package pullrequests
 
 import (
 	"reviewer-assigner/internal/domain"
@@ -23,6 +23,7 @@ type PullRequestShort struct {
 
 type PullRequest struct {
 	PullRequestShort
+
 	AssignedReviewers []string
 	CreatedAt         *time.Time
 	MergedAt          *time.Time
@@ -33,10 +34,17 @@ type ReviewerPicker interface {
 }
 
 type ReviewerReassigner interface {
-	Reassign(oldReviewer *teamsDomain.Member, members []teamsDomain.Member) (newReviewer *teamsDomain.Member, err error)
+	Reassign(
+		oldReviewer *teamsDomain.Member,
+		members []teamsDomain.Member,
+	) (newReviewer *teamsDomain.Member, err error)
 }
 
-func (p *PullRequest) AssignReviewers(members []teamsDomain.Member, picker ReviewerPicker, count int) error {
+func (p *PullRequest) AssignReviewers(
+	members []teamsDomain.Member,
+	picker ReviewerPicker,
+	count int,
+) error {
 	if p.Status == StatusMerged {
 		return domain.ErrPullRequestAlreadyMerged
 	}
@@ -93,7 +101,10 @@ func (p *PullRequest) Reassign(
 			member.ID != oldReviewer.ID &&
 			member.ID != p.AuthorID &&
 			!isAlreadyReviewer(&member) {
-			activeMembersExcludeAuthorReviewers = append(activeMembersExcludeAuthorReviewers, member)
+			activeMembersExcludeAuthorReviewers = append(
+				activeMembersExcludeAuthorReviewers,
+				member,
+			)
 		}
 	}
 

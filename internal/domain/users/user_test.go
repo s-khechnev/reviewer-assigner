@@ -89,7 +89,11 @@ func TestUser_SetIsActive(t *testing.T) {
 			_ = user.SetIsActive(tt.isActive)
 
 			if user.IsActive != tt.expectedActive {
-				t.Errorf("SetIsActive() IsActive = %v, expected %v", user.IsActive, tt.expectedActive)
+				t.Errorf(
+					"SetIsActive() IsActive = %v, expected %v",
+					user.IsActive,
+					tt.expectedActive,
+				)
 			}
 
 			if user.ID != tt.initialUser.ID {
@@ -99,7 +103,11 @@ func TestUser_SetIsActive(t *testing.T) {
 				t.Errorf("SetIsActive() changed Name from %s to %s", tt.initialUser.Name, user.Name)
 			}
 			if user.TeamName != tt.initialUser.TeamName {
-				t.Errorf("SetIsActive() changed TeamName from %s to %s", tt.initialUser.TeamName, user.TeamName)
+				t.Errorf(
+					"SetIsActive() changed TeamName from %s to %s",
+					tt.initialUser.TeamName,
+					user.TeamName,
+				)
 			}
 		})
 	}

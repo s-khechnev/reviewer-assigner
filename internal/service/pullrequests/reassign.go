@@ -1,4 +1,4 @@
-package pull_requests
+package pullrequests
 
 import (
 	"context"
@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"log/slog"
 	"reviewer-assigner/internal/domain"
-	prDomain "reviewer-assigner/internal/domain/pull_requests"
+	prsDomain "reviewer-assigner/internal/domain/pullrequests"
+	teamsDomain "reviewer-assigner/internal/domain/teams"
+	usersDomain "reviewer-assigner/internal/domain/users"
 	"reviewer-assigner/internal/logger"
 	"reviewer-assigner/internal/service"
 	"slices"
@@ -14,7 +16,7 @@ import (
 
 func (s *PullRequestService) Reassign(
 	ctx context.Context, pullRequestID, oldReviewerID string,
-) (pullRequest *prDomain.PullRequest, replacedBy string, err error) {
+) (pullRequest *prsDomain.PullRequest, replacedBy string, err error) {
 	const op = "services.pull_requests.Reassign"
 	log := s.log.With(
 		slog.String("op", op),
@@ -37,13 +39,14 @@ func (s *PullRequestService) Reassign(
 
 		log.Info("got pull request", slog.Any("pull_request", pullRequest))
 
-		if pullRequest.Status == prDomain.StatusMerged {
+		if pullRequest.Status == prsDomain.StatusMerged {
 			log.Info("pull request is already merged")
 
 			return service.ErrPullRequestAlreadyMerged
 		}
 
-		oldReviewer, err := s.userRepo.GetUserByID(ctx, oldReviewerID)
+		var oldReviewer *usersDomain.User
+		oldReviewer, err = s.userRepo.GetUserByID(ctx, oldReviewerID)
 		if errors.Is(err, service.ErrUserNotFound) {
 			log.Error("old reviewer not found")
 
@@ -63,7 +66,8 @@ func (s *PullRequestService) Reassign(
 			return service.ErrPullRequestNotAssigned
 		}
 
-		team, err := s.teamRepo.GetTeamByName(ctx, oldReviewer.TeamName)
+		var team *teamsDomain.Team
+		team, err = s.teamRepo.GetTeamByName(ctx, oldReviewer.TeamName)
 		if errors.Is(err, service.ErrTeamNotFound) {
 			log.Error("team not found")
 
@@ -77,7 +81,11 @@ func (s *PullRequestService) Reassign(
 
 		log.Info("got team", slog.Any("team", team))
 
-		replacedBy, err = pullRequest.Reassign(&oldReviewer.Member, team.Members, s.reviewerReassigner)
+		replacedBy, err = pullRequest.Reassign(
+			&oldReviewer.Member,
+			team.Members,
+			s.reviewerReassigner,
+		)
 		if errors.Is(err, domain.ErrNotEnoughMembers) {
 			log.Error("not enough active members")
 

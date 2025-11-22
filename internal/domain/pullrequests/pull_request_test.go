@@ -1,4 +1,4 @@
-package pull_requests
+package pullrequests
 
 import (
 	"errors"
@@ -9,7 +9,7 @@ import (
 	teamsDomain "reviewer-assigner/internal/domain/teams"
 )
 
-// Mock implementations for ReviewerPicker and ReviewerReassigner
+// Mock implementations for ReviewerPicker and ReviewerReassigner.
 type MockReviewerPicker struct {
 	PickFunc func(members []teamsDomain.Member, count int) []teamsDomain.Member
 }
@@ -25,13 +25,17 @@ type MockReviewerReassigner struct {
 	ReassignFunc func(oldReviewer *teamsDomain.Member, members []teamsDomain.Member) (newReviewer *teamsDomain.Member, err error)
 }
 
-func (m *MockReviewerReassigner) Reassign(oldReviewer *teamsDomain.Member, members []teamsDomain.Member) (*teamsDomain.Member, error) {
+func (m *MockReviewerReassigner) Reassign(
+	oldReviewer *teamsDomain.Member,
+	members []teamsDomain.Member,
+) (*teamsDomain.Member, error) {
 	if m.ReassignFunc != nil {
 		return m.ReassignFunc(oldReviewer, members)
 	}
-	return nil, nil
+	return nil, nil //nolint
 }
 
+//nolint:revive
 func TestPullRequest_AssignReviewers(t *testing.T) {
 	now := time.Now()
 	tests := []struct {
@@ -251,12 +255,16 @@ func TestPullRequest_Reassign(t *testing.T) {
 				{ID: "inactive1", Name: "Inactive1", IsActive: false},
 			},
 			reassigner: &MockReviewerReassigner{
-				ReassignFunc: func(oldReviewer *teamsDomain.Member, members []teamsDomain.Member) (*teamsDomain.Member, error) {
+				ReassignFunc: func(_ *teamsDomain.Member, members []teamsDomain.Member) (*teamsDomain.Member, error) {
 					// Should receive only active members excluding author, old reviewer, and already assigned
 					if len(members) != 1 || members[0].ID != "reviewer3" {
 						t.Errorf("Reassign received wrong members list: %v", members)
 					}
-					return &teamsDomain.Member{ID: "reviewer3", Name: "Reviewer3", IsActive: true}, nil
+					return &teamsDomain.Member{
+						ID:       "reviewer3",
+						Name:     "Reviewer3",
+						IsActive: true,
+					}, nil
 				},
 			},
 			wantErr:           false,
@@ -279,7 +287,7 @@ func TestPullRequest_Reassign(t *testing.T) {
 				{ID: "inactive1", Name: "Inactive1", IsActive: false},
 			},
 			reassigner: &MockReviewerReassigner{
-				ReassignFunc: func(oldReviewer *teamsDomain.Member, members []teamsDomain.Member) (*teamsDomain.Member, error) {
+				ReassignFunc: func(_ *teamsDomain.Member, _ []teamsDomain.Member) (*teamsDomain.Member, error) {
 					return nil, errors.New("no available candidates")
 				},
 			},
@@ -300,8 +308,12 @@ func TestPullRequest_Reassign(t *testing.T) {
 				{ID: "reviewer3", Name: "Reviewer3", IsActive: true},
 			},
 			reassigner: &MockReviewerReassigner{
-				ReassignFunc: func(oldReviewer *teamsDomain.Member, members []teamsDomain.Member) (*teamsDomain.Member, error) {
-					return &teamsDomain.Member{ID: "reviewer3", Name: "Reviewer3", IsActive: true}, nil
+				ReassignFunc: func(_ *teamsDomain.Member, _ []teamsDomain.Member) (*teamsDomain.Member, error) {
+					return &teamsDomain.Member{
+						ID:       "reviewer3",
+						Name:     "Reviewer3",
+						IsActive: true,
+					}, nil
 				},
 			},
 			wantErr:       true,
@@ -321,8 +333,12 @@ func TestPullRequest_Reassign(t *testing.T) {
 				{ID: "reviewer4", Name: "Reviewer4", IsActive: true},
 			},
 			reassigner: &MockReviewerReassigner{
-				ReassignFunc: func(oldReviewer *teamsDomain.Member, members []teamsDomain.Member) (*teamsDomain.Member, error) {
-					return &teamsDomain.Member{ID: "reviewer4", Name: "Reviewer4", IsActive: true}, nil
+				ReassignFunc: func(_ *teamsDomain.Member, _ []teamsDomain.Member) (*teamsDomain.Member, error) {
+					return &teamsDomain.Member{
+						ID:       "reviewer4",
+						Name:     "Reviewer4",
+						IsActive: true,
+					}, nil
 				},
 			},
 			wantErr:           false,

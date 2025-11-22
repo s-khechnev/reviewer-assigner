@@ -6,10 +6,13 @@ import (
 	"log/slog"
 	"reviewer-assigner/internal/logger"
 
-	prDomain "reviewer-assigner/internal/domain/pull_requests"
+	prDomain "reviewer-assigner/internal/domain/pullrequests"
 )
 
-func (s *UserService) GetReview(ctx context.Context, userID string) ([]prDomain.PullRequestShort, error) {
+func (s *UserService) GetReview(
+	ctx context.Context,
+	userID string,
+) ([]prDomain.PullRequestShort, error) {
 	const op = "services.users.GetReview"
 	log := s.log.With(
 		slog.String("op", op),

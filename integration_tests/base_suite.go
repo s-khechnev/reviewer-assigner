@@ -3,38 +3,41 @@ package integration_tests
 import (
 	"context"
 	"database/sql"
+	"io"
+	"log/slog"
+	"net/http/httptest"
+	"reviewer-assigner/internal/app"
+	reviewerPicker "reviewer-assigner/internal/domain/pullrequests/pickers"
+	reviewerAssigner "reviewer-assigner/internal/domain/pullrequests/reassigners"
+	prsHandler "reviewer-assigner/internal/http/handlers/pullrequests"
+	teamsHandler "reviewer-assigner/internal/http/handlers/teams"
+	usersHandler "reviewer-assigner/internal/http/handlers/users"
+	prsService "reviewer-assigner/internal/service/pullrequests"
+	teamsService "reviewer-assigner/internal/service/teams"
+	usersService "reviewer-assigner/internal/service/users"
+	"reviewer-assigner/internal/storage/postgres"
+	prsRepo "reviewer-assigner/internal/storage/pullrequests"
+	teamsRepo "reviewer-assigner/internal/storage/teams"
+	usersRepo "reviewer-assigner/internal/storage/users"
+	"time"
+
 	trmpgx "github.com/avito-tech/go-transaction-manager/drivers/pgxv5/v2"
 	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
 	"github.com/gin-gonic/gin"
 	"github.com/pressly/goose/v3"
 	"github.com/stretchr/testify/suite"
-	"io"
-	"log/slog"
-	"net/http/httptest"
-	"reviewer-assigner/internal/app"
-	reviewerPicker "reviewer-assigner/internal/domain/pull_requests/reviewer_pickers"
-	reviewerAssigner "reviewer-assigner/internal/domain/pull_requests/reviewer_reassigners"
-	prHandler "reviewer-assigner/internal/http/handlers/pull_requests"
-	teamsHandler "reviewer-assigner/internal/http/handlers/teams"
-	usersHandler "reviewer-assigner/internal/http/handlers/users"
-	prService "reviewer-assigner/internal/service/pull_requests"
-	teamsService "reviewer-assigner/internal/service/teams"
-	usersService "reviewer-assigner/internal/service/users"
-	"reviewer-assigner/internal/storage/postgres"
-	pullRequestsRepo "reviewer-assigner/internal/storage/pull_requests"
-	teamsRepo "reviewer-assigner/internal/storage/teams"
-	usersRepo "reviewer-assigner/internal/storage/users"
-	"time"
 )
 
 const migrationsPath = "../migrations/postgres"
 
+//gochecknoglobals:ignore
 var out = io.Discard
 
-//var out = os.Stdout
+// var out = os.Stdout
 
 type BaseSuite struct {
 	suite.Suite
+
 	psqlContainer *PostgreSQLContainer
 	server        *httptest.Server
 	loader        *FixtureLoader
@@ -42,9 +45,10 @@ type BaseSuite struct {
 
 func (s *BaseSuite) SetupSuite() {
 	l := slog.New(slog.NewTextHandler(out, &slog.HandlerOptions{Level: slog.LevelDebug}))
-	gin.DefaultWriter = out
+	gin.DefaultWriter = out // nolint:reassign
 
-	ctx, ctxCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	const baseTimout = 30 * time.Second
+	ctx, ctxCancel := context.WithTimeout(context.Background(), baseTimout)
 	defer ctxCancel()
 
 	psqlContainer, err := NewPostgreSQLContainer(ctx)
@@ -70,11 +74,14 @@ func (s *BaseSuite) SetupSuite() {
 
 	teamRepo := teamsRepo.NewPostgresTeamRepository(pool, trmpgx.DefaultCtxGetter)
 	userRepo := usersRepo.NewPostgresUserRepository(pool, trmpgx.DefaultCtxGetter)
-	pullRequestRepo := pullRequestsRepo.NewPostgresPullRequestRepository(pool, trmpgx.DefaultCtxGetter)
+	pullRequestRepo := prsRepo.NewPostgresPullRequestRepository(
+		pool,
+		trmpgx.DefaultCtxGetter,
+	)
 
 	teamService := teamsService.NewTeamService(l, teamRepo, txManager)
 	userService := usersService.NewUserService(l, userRepo, pullRequestRepo, txManager)
-	pullRequestService := prService.NewPullRequestService(
+	pullRequestService := prsService.NewPullRequestService(
 		l,
 		userRepo,
 		teamRepo,
@@ -86,7 +93,7 @@ func (s *BaseSuite) SetupSuite() {
 
 	teamHandler := teamsHandler.NewTeamHandler(l, teamService)
 	userHandler := usersHandler.NewUserHandler(l, userService)
-	pullRequestHandler := prHandler.NewPullRequestHandler(l, pullRequestService)
+	pullRequestHandler := prsHandler.NewPullRequestHandler(l, pullRequestService)
 
 	s.server = httptest.NewServer(app.NewRouter(l, teamHandler, userHandler, pullRequestHandler))
 
@@ -94,7 +101,8 @@ func (s *BaseSuite) SetupSuite() {
 }
 
 func (s *BaseSuite) TearDownSuite() {
-	ctx, ctxCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	const timeoutToDown = 5 * time.Second
+	ctx, ctxCancel := context.WithTimeout(context.Background(), timeoutToDown)
 	defer ctxCancel()
 
 	s.Require().NoError(s.psqlContainer.Terminate(ctx))

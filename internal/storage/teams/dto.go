@@ -11,7 +11,7 @@ type MemberDB struct {
 	IsActive bool   `db:"is_active"`
 }
 
-func DbToDomainMember(d *MemberDB) *teamsDomain.Member {
+func DBToDomainMember(d *MemberDB) *teamsDomain.Member {
 	return &teamsDomain.Member{
 		ID:       d.MemberID,
 		Name:     d.Name,

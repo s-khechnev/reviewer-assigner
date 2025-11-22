@@ -2,9 +2,10 @@ package integration_tests
 
 import (
 	"database/sql"
+	"testing"
+
 	"github.com/go-testfixtures/testfixtures/v3"
 	"github.com/stretchr/testify/suite"
-	"testing"
 )
 
 type UserGetReviewSuite struct {
@@ -37,5 +38,5 @@ func TestUserGetReviewSuite_Run(t *testing.T) {
 }
 
 func (s *UserGetReviewSuite) TestDefault() {
-	s.Require().True(true, "user default should be true")
+	// s.Require().True(true, "user default should be true")
 }

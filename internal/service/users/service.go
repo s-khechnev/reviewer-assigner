@@ -2,10 +2,11 @@ package users
 
 import (
 	"context"
-	"github.com/avito-tech/go-transaction-manager/trm/v2"
 	"log/slog"
-	prDomain "reviewer-assigner/internal/domain/pull_requests"
+	prsDomain "reviewer-assigner/internal/domain/pullrequests"
 	usersDomain "reviewer-assigner/internal/domain/users"
+
+	"github.com/avito-tech/go-transaction-manager/trm/v2"
 )
 
 type UserRepository interface {
@@ -14,7 +15,10 @@ type UserRepository interface {
 }
 
 type PullRequestRepository interface {
-	GetPullRequestsForReview(ctx context.Context, userID string) ([]prDomain.PullRequestShort, error)
+	GetPullRequestsForReview(
+		ctx context.Context,
+		userID string,
+	) ([]prsDomain.PullRequestShort, error)
 }
 
 type UserService struct {

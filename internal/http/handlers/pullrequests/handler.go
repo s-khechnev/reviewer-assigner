@@ -1,15 +1,16 @@
-package pull_requests
+package pullrequests
 
 import (
 	"errors"
-	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
 	"log/slog"
 	"net/http"
 	"reviewer-assigner/internal/http/handlers"
 	"reviewer-assigner/internal/logger"
 	"reviewer-assigner/internal/service"
-	prs "reviewer-assigner/internal/service/pull_requests"
+	prs "reviewer-assigner/internal/service/pullrequests"
+
+	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 )
 
 var validate = validator.New()
@@ -19,7 +20,10 @@ type PullRequestHandler struct {
 	log                *slog.Logger
 }
 
-func NewPullRequestHandler(log *slog.Logger, pullRequestService *prs.PullRequestService) *PullRequestHandler {
+func NewPullRequestHandler(
+	log *slog.Logger,
+	pullRequestService *prs.PullRequestService,
+) *PullRequestHandler {
 	return &PullRequestHandler{
 		pullRequestService: pullRequestService,
 		log:                log,
@@ -43,7 +47,10 @@ func (h *PullRequestHandler) Create(c *gin.Context) {
 	if err := validate.Struct(req); err != nil {
 		log.Warn("validation error", logger.ErrAttr(err))
 
-		c.JSON(http.StatusUnprocessableEntity, handlers.NewErrorResponse(handlers.ErrCodeInvalidBody))
+		c.JSON(
+			http.StatusUnprocessableEntity,
+			handlers.NewErrorResponse(handlers.ErrCodeInvalidBody),
+		)
 		return
 	}
 
@@ -53,7 +60,10 @@ func (h *PullRequestHandler) Create(c *gin.Context) {
 		return
 	}
 	if errors.Is(err, service.ErrPullRequestAlreadyExists) {
-		c.JSON(http.StatusConflict, handlers.NewErrorResponse(handlers.ErrCodePullRequestExists, req.ID))
+		c.JSON(
+			http.StatusConflict,
+			handlers.NewErrorResponse(handlers.ErrCodePullRequestExists, req.ID),
+		)
 		return
 	}
 	if err != nil {
@@ -105,7 +115,11 @@ func (h *PullRequestHandler) Reassign(c *gin.Context) {
 
 	log.Info("request decoded", slog.Any("request", req))
 
-	pullRequest, replacedBy, err := h.pullRequestService.Reassign(c.Copy(), req.ID, req.OldReviewerID)
+	pullRequest, replacedBy, err := h.pullRequestService.Reassign(
+		c.Copy(),
+		req.ID,
+		req.OldReviewerID,
+	)
 	if errors.Is(err, service.ErrPullRequestNotFound) {
 		c.JSON(http.StatusNotFound, handlers.NewErrorResponse(handlers.ErrCodeResourceNotFound))
 		return
@@ -115,11 +129,17 @@ func (h *PullRequestHandler) Reassign(c *gin.Context) {
 		return
 	}
 	if errors.Is(err, service.ErrPullRequestNotAssigned) {
-		c.JSON(http.StatusConflict, handlers.NewErrorResponse(handlers.ErrCodePullRequestNotAssigned))
+		c.JSON(
+			http.StatusConflict,
+			handlers.NewErrorResponse(handlers.ErrCodePullRequestNotAssigned),
+		)
 		return
 	}
 	if errors.Is(err, service.ErrPullRequestNoCandidates) {
-		c.JSON(http.StatusConflict, handlers.NewErrorResponse(handlers.ErrCodePullRequestNoCandidate))
+		c.JSON(
+			http.StatusConflict,
+			handlers.NewErrorResponse(handlers.ErrCodePullRequestNoCandidate),
+		)
 		return
 	}
 	if err != nil {

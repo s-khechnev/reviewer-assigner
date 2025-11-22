@@ -1,7 +1,7 @@
-package pull_requests
+package pullrequests
 
 import (
-	prDomain "reviewer-assigner/internal/domain/pull_requests"
+	prsDomain "reviewer-assigner/internal/domain/pullrequests"
 	"time"
 )
 
@@ -15,7 +15,8 @@ type MergePullRequestResponse struct {
 
 type ReassignPullRequestResponse struct {
 	PullRequestResponse `json:"pr"`
-	ReplacedBy          string `json:"replaced_by"`
+
+	ReplacedBy string `json:"replaced_by"`
 }
 
 type PullRequestResponse struct {
@@ -28,26 +29,29 @@ type PullRequestResponse struct {
 	MergedAt          *time.Time `json:"merged_at,omitempty"`
 }
 
-func domainToCreatePullRequestResponse(pr *prDomain.PullRequest) *CreatePullRequestResponse {
+func domainToCreatePullRequestResponse(pr *prsDomain.PullRequest) *CreatePullRequestResponse {
 	return &CreatePullRequestResponse{
 		PullRequestResponse: *domainToPullRequestResponse(pr),
 	}
 }
 
-func domainToMergePullRequestResponse(pr *prDomain.PullRequest) *MergePullRequestResponse {
+func domainToMergePullRequestResponse(pr *prsDomain.PullRequest) *MergePullRequestResponse {
 	return &MergePullRequestResponse{
 		PullRequestResponse: *domainToPullRequestResponse(pr),
 	}
 }
 
-func domainToReassignPullRequestResponse(pr *prDomain.PullRequest, replacedBy string) *ReassignPullRequestResponse {
+func domainToReassignPullRequestResponse(
+	pr *prsDomain.PullRequest,
+	replacedBy string,
+) *ReassignPullRequestResponse {
 	return &ReassignPullRequestResponse{
 		PullRequestResponse: *domainToPullRequestResponse(pr),
 		ReplacedBy:          replacedBy,
 	}
 }
 
-func domainToPullRequestResponse(pr *prDomain.PullRequest) *PullRequestResponse {
+func domainToPullRequestResponse(pr *prsDomain.PullRequest) *PullRequestResponse {
 	return &PullRequestResponse{
 		ID:                pr.ID,
 		Name:              pr.Name,

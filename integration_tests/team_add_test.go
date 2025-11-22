@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/json"
-	"github.com/go-testfixtures/testfixtures/v3"
-	"github.com/stretchr/testify/suite"
 	"net/http"
 	"reviewer-assigner/internal/http/handlers"
 	teamsHandler "reviewer-assigner/internal/http/handlers/teams"
 	"testing"
+
+	"github.com/go-testfixtures/testfixtures/v3"
+	"github.com/stretchr/testify/suite"
 )
 
 type TeamAddSuite struct {
@@ -49,7 +50,8 @@ func (s *TeamAddSuite) TestAddTeamEmpty() {
 }
 `
 
-	res, err := s.server.Client().Post(s.server.URL+"/team/add", "", bytes.NewBufferString(requestBody))
+	res, err := s.server.Client().
+		Post(s.server.URL+"/team/add", "", bytes.NewBufferString(requestBody))
 	s.Require().NoError(err)
 
 	defer res.Body.Close()
@@ -91,7 +93,8 @@ func (s *TeamAddSuite) TestAddTeamDefault() {
 }
 `
 
-	res, err := s.server.Client().Post(s.server.URL+"/team/add", "", bytes.NewBufferString(requestBody))
+	res, err := s.server.Client().
+		Post(s.server.URL+"/team/add", "", bytes.NewBufferString(requestBody))
 	s.Require().NoError(err)
 
 	defer res.Body.Close()
@@ -139,7 +142,8 @@ func (s *TeamAddSuite) TestAddTeamAlreadyExists() {
 }
 `
 
-	res, err := s.server.Client().Post(s.server.URL+"/team/add", "", bytes.NewBufferString(requestBody))
+	res, err := s.server.Client().
+		Post(s.server.URL+"/team/add", "", bytes.NewBufferString(requestBody))
 	s.Require().NoError(err)
 	defer res.Body.Close()
 
@@ -180,7 +184,8 @@ func (s *TeamAddSuite) TestAddTeamWithInactiveMembers() {
 }
 `
 
-	res, err := s.server.Client().Post(s.server.URL+"/team/add", "", bytes.NewBufferString(requestBody))
+	res, err := s.server.Client().
+		Post(s.server.URL+"/team/add", "", bytes.NewBufferString(requestBody))
 	s.Require().NoError(err)
 	defer res.Body.Close()
 
@@ -227,7 +232,8 @@ func (s *TeamAddSuite) TestAddTeamSingleMember() {
 }
 `
 
-	res, err := s.server.Client().Post(s.server.URL+"/team/add", "", bytes.NewBufferString(requestBody))
+	res, err := s.server.Client().
+		Post(s.server.URL+"/team/add", "", bytes.NewBufferString(requestBody))
 	s.Require().NoError(err)
 	defer res.Body.Close()
 
@@ -267,7 +273,8 @@ func (s *TeamAddSuite) TestAddTeamInvalidJSON() {
 	]
 `
 
-	res, err := s.server.Client().Post(s.server.URL+"/team/add", "", bytes.NewBufferString(invalidJSON))
+	res, err := s.server.Client().
+		Post(s.server.URL+"/team/add", "", bytes.NewBufferString(invalidJSON))
 	s.Require().NoError(err)
 	defer res.Body.Close()
 
@@ -367,7 +374,8 @@ func (s *TeamAddSuite) TestAddTeamMissingRequiredFields() {
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			res, err := s.server.Client().Post(s.server.URL+"/team/add", "", bytes.NewBufferString(tc.requestBody))
+			res, err := s.server.Client().
+				Post(s.server.URL+"/team/add", "", bytes.NewBufferString(tc.requestBody))
 			s.Require().NoError(err)
 			defer res.Body.Close()
 
@@ -396,7 +404,8 @@ func (s *TeamAddSuite) TestAddTeamUpdatesExistingUsers() {
 }
 `
 
-	res, err := s.server.Client().Post(s.server.URL+"/team/add", "", bytes.NewBufferString(requestBody))
+	res, err := s.server.Client().
+		Post(s.server.URL+"/team/add", "", bytes.NewBufferString(requestBody))
 	s.Require().NoError(err)
 	defer res.Body.Close()
 
@@ -430,8 +439,8 @@ func (s *TeamAddSuite) TestAddTeamUpdatesExistingUsers() {
 	for _, member := range response.Members {
 		expectedMember, ok := expected[member.ID]
 		s.Require().True(ok)
-		s.Require().Equal(member.Name, expectedMember.Name)
-		s.Require().Equal(member.IsActive, expectedMember.IsActive)
+		s.Require().Equal(expectedMember.Name, member.Name)
+		s.Require().Equal(expectedMember.IsActive, member.IsActive)
 	}
 }
 
@@ -454,7 +463,8 @@ func (s *TeamAddSuite) TestAddTeamUpdatesAllUsers() {
 }
 `
 
-	res, err := s.server.Client().Post(s.server.URL+"/team/add", "", bytes.NewBufferString(requestBody))
+	res, err := s.server.Client().
+		Post(s.server.URL+"/team/add", "", bytes.NewBufferString(requestBody))
 	s.Require().NoError(err)
 	defer res.Body.Close()
 
@@ -483,7 +493,7 @@ func (s *TeamAddSuite) TestAddTeamUpdatesAllUsers() {
 	for _, member := range response.Members {
 		expectedMember, ok := expected[member.ID]
 		s.Require().True(ok)
-		s.Require().Equal(member.Name, expectedMember.Name)
-		s.Require().Equal(member.IsActive, expectedMember.IsActive)
+		s.Require().Equal(expectedMember.Name, member.Name)
+		s.Require().Equal(expectedMember.IsActive, member.IsActive)
 	}
 }

@@ -1,13 +1,14 @@
-package pull_requests
+package pullrequests
 
 import (
 	"context"
-	"github.com/avito-tech/go-transaction-manager/trm/v2"
 	"log/slog"
-	prDomain "reviewer-assigner/internal/domain/pull_requests"
+	prsDomain "reviewer-assigner/internal/domain/pullrequests"
 	teamsDomain "reviewer-assigner/internal/domain/teams"
 	usersDomain "reviewer-assigner/internal/domain/users"
 	"time"
+
+	"github.com/avito-tech/go-transaction-manager/trm/v2"
 )
 
 type UserRepository interface {
@@ -19,8 +20,8 @@ type TeamRepository interface {
 }
 
 type PullRequestRepository interface {
-	GetByID(ctx context.Context, pullRequestID string) (*prDomain.PullRequest, error)
-	Create(ctx context.Context, pullRequest *prDomain.PullRequest) (string, error)
+	GetByID(ctx context.Context, pullRequestID string) (*prsDomain.PullRequest, error)
+	Create(ctx context.Context, pullRequest *prsDomain.PullRequest) (string, error)
 	SetStatusMerged(ctx context.Context, pullRequestID string, mergedAt time.Time) error
 	UpdateReviewers(ctx context.Context, pullRequestID string, newReviewerIDs []string) error
 }
@@ -30,7 +31,10 @@ type ReviewerPicker interface {
 }
 
 type ReviewerReassigner interface {
-	Reassign(oldReviewer *teamsDomain.Member, members []teamsDomain.Member) (newReviewer *teamsDomain.Member, err error)
+	Reassign(
+		oldReviewer *teamsDomain.Member,
+		members []teamsDomain.Member,
+	) (newReviewer *teamsDomain.Member, err error)
 }
 
 type PullRequestService struct {

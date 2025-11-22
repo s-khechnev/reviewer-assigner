@@ -18,14 +18,20 @@ type PostgresUserRepository struct {
 	getter *trmpgx.CtxGetter
 }
 
-func NewPostgresUserRepository(pool *pgxpool.Pool, getter *trmpgx.CtxGetter) *PostgresUserRepository {
+func NewPostgresUserRepository(
+	pool *pgxpool.Pool,
+	getter *trmpgx.CtxGetter,
+) *PostgresUserRepository {
 	return &PostgresUserRepository{
 		pool:   pool,
 		getter: getter,
 	}
 }
 
-func (r *PostgresUserRepository) GetUserByID(ctx context.Context, userID string) (*usersDomain.User, error) {
+func (r *PostgresUserRepository) GetUserByID(
+	ctx context.Context,
+	userID string,
+) (*usersDomain.User, error) {
 	const query = `
 	SELECT u.id, u.user_id, u.name, u.is_active, t.name team_name FROM users u
 	JOIN teams t ON t.id = u.team_id
@@ -52,7 +58,9 @@ func (r *PostgresUserRepository) UpdateIsActive(ctx context.Context, user *users
 	`
 
 	var surrogateUserID int64
-	err := r.getter.DefaultTrOrDB(ctx, r.pool).QueryRow(ctx, query, user.IsActive, user.ID).Scan(&surrogateUserID)
+	err := r.getter.DefaultTrOrDB(ctx, r.pool).
+		QueryRow(ctx, query, user.IsActive, user.ID).
+		Scan(&surrogateUserID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return service.ErrUserNotFound
 	}

@@ -1,7 +1,7 @@
-package reviewer_pickers
+package pickers
 
 import (
-	"math/rand"
+	"math/rand/v2"
 	teamsDomain "reviewer-assigner/internal/domain/teams"
 )
 

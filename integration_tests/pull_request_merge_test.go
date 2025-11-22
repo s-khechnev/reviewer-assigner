@@ -4,14 +4,15 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/json"
-	"github.com/go-testfixtures/testfixtures/v3"
-	"github.com/stretchr/testify/suite"
 	"html/template"
 	"net/http"
 	"reviewer-assigner/internal/http/handlers"
-	prHandler "reviewer-assigner/internal/http/handlers/pull_requests"
+	prHandler "reviewer-assigner/internal/http/handlers/pullrequests"
 	"testing"
 	"time"
+
+	"github.com/go-testfixtures/testfixtures/v3"
+	"github.com/stretchr/testify/suite"
 )
 
 type PullRequestMergeSuite struct {
@@ -50,7 +51,8 @@ func (s *PullRequestMergeSuite) TestMergeDefault() {
 }
 `
 
-	res, err := s.server.Client().Post(s.server.URL+"/pullRequest/merge", "", bytes.NewBufferString(requestBody))
+	res, err := s.server.Client().
+		Post(s.server.URL+"/pullRequest/merge", "", bytes.NewBufferString(requestBody))
 	s.Require().NoError(err)
 
 	defer res.Body.Close()
@@ -89,7 +91,7 @@ func (s *PullRequestMergeSuite) TestMergeDefault() {
 }
 `
 
-	expected := s.loader.LoadTemplate(expectedTemplate, map[string]interface{}{
+	expected := s.loader.LoadTemplate(expectedTemplate, map[string]any{
 		"id0":       response.AssignedReviewers[0],
 		"id1":       response.AssignedReviewers[1],
 		"createdAt": template.HTML(response.CreatedAt.Format(time.RFC3339Nano)),
@@ -106,7 +108,8 @@ func (s *PullRequestMergeSuite) TestNotFound() {
 }
 `
 
-	res, err := s.server.Client().Post(s.server.URL+"/pullRequest/merge", "", bytes.NewBufferString(requestBody))
+	res, err := s.server.Client().
+		Post(s.server.URL+"/pullRequest/merge", "", bytes.NewBufferString(requestBody))
 	s.Require().NoError(err)
 
 	defer res.Body.Close()
@@ -135,7 +138,8 @@ func (s *PullRequestMergeSuite) TestAlreadyMerged() {
 }
 `
 
-	res, err := s.server.Client().Post(s.server.URL+"/pullRequest/merge", "", bytes.NewBufferString(requestBody))
+	res, err := s.server.Client().
+		Post(s.server.URL+"/pullRequest/merge", "", bytes.NewBufferString(requestBody))
 	s.Require().NoError(err)
 
 	defer res.Body.Close()
@@ -177,7 +181,7 @@ func (s *PullRequestMergeSuite) TestAlreadyMerged() {
 	alreadyMergedAt, err := time.Parse(time.DateTime, "2024-01-15 10:33:00")
 	s.Require().NoError(err)
 
-	expected := s.loader.LoadTemplate(expectedTemplate, map[string]interface{}{
+	expected := s.loader.LoadTemplate(expectedTemplate, map[string]any{
 		"id0":       response.AssignedReviewers[0],
 		"id1":       response.AssignedReviewers[1],
 		"createdAt": template.HTML(response.CreatedAt.Format(time.RFC3339Nano)),

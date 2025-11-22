@@ -39,7 +39,11 @@ func (s *TeamService) AddTeam(
 	return team, err
 }
 
-func (s *TeamService) createTeam(ctx context.Context, teamName string, members []teamsDomain.Member) (*teamsDomain.Team, error) {
+func (s *TeamService) createTeam(
+	ctx context.Context,
+	teamName string,
+	members []teamsDomain.Member,
+) (*teamsDomain.Team, error) {
 	const op = "services.teams.createTeam"
 	log := s.log.With(
 		slog.String("op", op),
@@ -61,7 +65,7 @@ func (s *TeamService) createTeam(ctx context.Context, teamName string, members [
 	}, nil
 }
 
-// UpdateExistingTeam updates the members of an existing team only if the member IDs remain the same
+// UpdateExistingTeam updates the members of an existing team only if the member IDs remain the same.
 func (s *TeamService) updateExistingTeam(
 	ctx context.Context,
 	team *teamsDomain.Team,

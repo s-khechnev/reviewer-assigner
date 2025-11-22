@@ -1,11 +1,13 @@
-package pull_requests
+package pullrequests
 
 import (
 	"context"
 	"errors"
 	"fmt"
 	"log/slog"
-	prDomain "reviewer-assigner/internal/domain/pull_requests"
+	prsDomain "reviewer-assigner/internal/domain/pullrequests"
+	teamsDomain "reviewer-assigner/internal/domain/teams"
+	usersDomain "reviewer-assigner/internal/domain/users"
 	"reviewer-assigner/internal/logger"
 	"reviewer-assigner/internal/service"
 	"time"
@@ -14,7 +16,7 @@ import (
 func (s *PullRequestService) Create(
 	ctx context.Context,
 	prID, prName, authorID string,
-) (pullRequest *prDomain.PullRequest, err error) {
+) (pullRequest *prsDomain.PullRequest, err error) {
 	const op = "services.pull_requests.Create"
 	log := s.log.With(
 		slog.String("op", op),
@@ -24,7 +26,8 @@ func (s *PullRequestService) Create(
 	)
 
 	err = s.txManager.Do(ctx, func(ctx context.Context) error {
-		author, err := s.userRepo.GetUserByID(ctx, authorID)
+		var author *usersDomain.User
+		author, err = s.userRepo.GetUserByID(ctx, authorID)
 		if errors.Is(err, service.ErrUserNotFound) {
 			log.Error("author not found")
 
@@ -38,7 +41,8 @@ func (s *PullRequestService) Create(
 
 		log.Info("got author", slog.Any("author", author))
 
-		team, err := s.teamRepo.GetTeamByName(ctx, author.TeamName)
+		var team *teamsDomain.Team
+		team, err = s.teamRepo.GetTeamByName(ctx, author.TeamName)
 		if errors.Is(err, service.ErrTeamNotFound) {
 			log.Error("team not found")
 
@@ -53,12 +57,12 @@ func (s *PullRequestService) Create(
 		log.Info("got team", slog.Any("team", team))
 
 		now := time.Now()
-		pullRequest = &prDomain.PullRequest{
-			PullRequestShort: prDomain.PullRequestShort{
+		pullRequest = &prsDomain.PullRequest{
+			PullRequestShort: prsDomain.PullRequestShort{
 				ID:       prID,
 				Name:     prName,
 				AuthorID: author.ID,
-				Status:   prDomain.StatusOpen,
+				Status:   prsDomain.StatusOpen,
 			},
 			CreatedAt: &now,
 		}

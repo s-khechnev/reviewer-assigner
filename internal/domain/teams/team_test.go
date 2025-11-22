@@ -124,7 +124,11 @@ func TestTeam_UpdateMembers(t *testing.T) {
 			}
 
 			if len(team.Members) != len(tt.wantMembers) {
-				t.Errorf("UpdateMembers() member count = %d, want %d", len(team.Members), len(tt.wantMembers))
+				t.Errorf(
+					"UpdateMembers() member count = %d, want %d",
+					len(team.Members),
+					len(tt.wantMembers),
+				)
 			}
 
 			for i, wantMember := range tt.wantMembers {
@@ -132,7 +136,8 @@ func TestTeam_UpdateMembers(t *testing.T) {
 					break
 				}
 				gotMember := team.Members[i]
-				if gotMember.ID != wantMember.ID || gotMember.Name != wantMember.Name || gotMember.IsActive != wantMember.IsActive {
+				if gotMember.ID != wantMember.ID || gotMember.Name != wantMember.Name ||
+					gotMember.IsActive != wantMember.IsActive {
 					t.Errorf("UpdateMembers() member[%d] = %+v, want %+v", i, gotMember, wantMember)
 				}
 			}
@@ -251,7 +256,6 @@ func Test_hasSameMemberIDs(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			result := hasSameMemberIDs(tt.oldMembers, tt.newMembers)
 			if result != tt.expected {
 				t.Errorf("hasSameMemberIDs() = %v, expected %v", result, tt.expected)

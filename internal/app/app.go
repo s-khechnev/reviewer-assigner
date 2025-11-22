@@ -4,29 +4,30 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	trmpgx "github.com/avito-tech/go-transaction-manager/drivers/pgxv5/v2"
-	"github.com/gin-gonic/gin"
-	sloggin "github.com/samber/slog-gin"
 	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
 	"reviewer-assigner/internal/config"
-	reviewerPicker "reviewer-assigner/internal/domain/pull_requests/reviewer_pickers"
-	reviewerAssigner "reviewer-assigner/internal/domain/pull_requests/reviewer_reassigners"
-	prHandler "reviewer-assigner/internal/http/handlers/pull_requests"
+	reviewerPicker "reviewer-assigner/internal/domain/pullrequests/pickers"
+	reviewerAssigner "reviewer-assigner/internal/domain/pullrequests/reassigners"
+	prHandler "reviewer-assigner/internal/http/handlers/pullrequests"
 	teamsHandler "reviewer-assigner/internal/http/handlers/teams"
 	usersHandler "reviewer-assigner/internal/http/handlers/users"
 	"reviewer-assigner/internal/logger"
-	prService "reviewer-assigner/internal/service/pull_requests"
+	prService "reviewer-assigner/internal/service/pullrequests"
 	teamsService "reviewer-assigner/internal/service/teams"
 	usersService "reviewer-assigner/internal/service/users"
 	"reviewer-assigner/internal/storage/postgres"
-	pullRequestsRepo "reviewer-assigner/internal/storage/pull_requests"
+	pullRequestsRepo "reviewer-assigner/internal/storage/pullrequests"
 	teamsRepo "reviewer-assigner/internal/storage/teams"
 	usersRepo "reviewer-assigner/internal/storage/users"
 	"syscall"
 	"time"
+
+	trmpgx "github.com/avito-tech/go-transaction-manager/drivers/pgxv5/v2"
+	"github.com/gin-gonic/gin"
+	sloggin "github.com/samber/slog-gin"
 
 	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
 )
@@ -46,7 +47,10 @@ func Run(ctx context.Context, cfg *config.Config, log *slog.Logger) {
 
 	teamRepo := teamsRepo.NewPostgresTeamRepository(pool, trmpgx.DefaultCtxGetter)
 	userRepo := usersRepo.NewPostgresUserRepository(pool, trmpgx.DefaultCtxGetter)
-	pullRequestRepo := pullRequestsRepo.NewPostgresPullRequestRepository(pool, trmpgx.DefaultCtxGetter)
+	pullRequestRepo := pullRequestsRepo.NewPostgresPullRequestRepository(
+		pool,
+		trmpgx.DefaultCtxGetter,
+	)
 
 	teamService := teamsService.NewTeamService(log, teamRepo, txManager)
 	userService := usersService.NewUserService(log, userRepo, pullRequestRepo, txManager)
@@ -74,11 +78,11 @@ func Run(ctx context.Context, cfg *config.Config, log *slog.Logger) {
 	router := NewRouter(log, teamHandler, userHandler, pullRequestHandler)
 
 	server := &http.Server{
-		Addr:         fmt.Sprintf("%s:%d", cfg.HttpServer.Address, cfg.HttpServer.Port),
+		Addr:         fmt.Sprintf("%s:%d", cfg.HTTPServer.Address, cfg.HTTPServer.Port),
 		Handler:      router,
-		IdleTimeout:  cfg.HttpServer.IdleTimeout,
-		WriteTimeout: cfg.HttpServer.Timeout,
-		ReadTimeout:  cfg.HttpServer.Timeout,
+		IdleTimeout:  cfg.HTTPServer.IdleTimeout,
+		WriteTimeout: cfg.HTTPServer.Timeout,
+		ReadTimeout:  cfg.HTTPServer.Timeout,
 	}
 
 	go func() {
@@ -93,7 +97,8 @@ func Run(ctx context.Context, cfg *config.Config, log *slog.Logger) {
 
 	log.Info("shutting down service")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	const timeoutToShutdown = 5 * time.Second
+	ctx, cancel := context.WithTimeout(context.Background(), timeoutToShutdown)
 	defer cancel()
 
 	if err = server.Shutdown(ctx); err != nil {

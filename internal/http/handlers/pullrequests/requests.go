@@ -1,9 +1,9 @@
-package pull_requests
+package pullrequests
 
 type CreatePullRequestRequest struct {
-	ID       string `json:"pull_request_id" validate:"required"`
+	ID       string `json:"pull_request_id"   validate:"required"`
 	Name     string `json:"pull_request_name" validate:"required"`
-	AuthorID string `json:"author_id" validate:"required"`
+	AuthorID string `json:"author_id"         validate:"required"`
 }
 
 type MergePullRequestRequest struct {

@@ -4,14 +4,15 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/json"
-	"github.com/go-testfixtures/testfixtures/v3"
-	"github.com/stretchr/testify/suite"
 	"html/template"
 	"net/http"
 	"reviewer-assigner/internal/http/handlers"
-	prHandler "reviewer-assigner/internal/http/handlers/pull_requests"
+	prHandler "reviewer-assigner/internal/http/handlers/pullrequests"
 	"testing"
 	"time"
+
+	"github.com/go-testfixtures/testfixtures/v3"
+	"github.com/stretchr/testify/suite"
 )
 
 type PullRequestReassignSuite struct {
@@ -51,7 +52,8 @@ func (s *PullRequestReassignSuite) TestDefault() {
 }
 `
 
-	res, err := s.server.Client().Post(s.server.URL+"/pullRequest/reassign", "", bytes.NewBufferString(requestBody))
+	res, err := s.server.Client().
+		Post(s.server.URL+"/pullRequest/reassign", "", bytes.NewBufferString(requestBody))
 	s.Require().NoError(err)
 
 	defer res.Body.Close()
@@ -90,7 +92,7 @@ func (s *PullRequestReassignSuite) TestDefault() {
 }
 `
 
-	expected := s.loader.LoadTemplate(expectedTemplate, map[string]interface{}{
+	expected := s.loader.LoadTemplate(expectedTemplate, map[string]any{
 		"id0":       response.AssignedReviewers[0],
 		"id1":       response.AssignedReviewers[1],
 		"createdAt": template.HTML(response.CreatedAt.Format(time.RFC3339Nano)),
@@ -148,8 +150,10 @@ func (s *PullRequestReassignSuite) TestNotFound() {
 	}
 
 	for _, tc := range testCases {
-		s.T().Run(tc.name, func(t *testing.T) {
-			res, err := s.server.Client().Post(s.server.URL+"/pullRequest/reassign", "", bytes.NewBufferString(tc.requestBody))
+		s.Run(tc.name, func() {
+			res, err := s.server.
+				Client().
+				Post(s.server.URL+"/pullRequest/reassign", "", bytes.NewBufferString(tc.requestBody))
 			s.Require().NoError(err)
 			defer res.Body.Close()
 
@@ -159,7 +163,7 @@ func (s *PullRequestReassignSuite) TestNotFound() {
 			err = json.NewDecoder(res.Body).Decode(&response)
 			s.Require().NoError(err)
 
-			JSONEq(t, tc.expectedError, response)
+			JSONEq(s.T(), tc.expectedError, response)
 		})
 	}
 }
@@ -172,7 +176,8 @@ func (s *PullRequestReassignSuite) TestMerged() {
 }
 `
 
-	res, err := s.server.Client().Post(s.server.URL+"/pullRequest/reassign", "", bytes.NewBufferString(requestBody))
+	res, err := s.server.Client().
+		Post(s.server.URL+"/pullRequest/reassign", "", bytes.NewBufferString(requestBody))
 	s.Require().NoError(err)
 
 	defer res.Body.Close()
@@ -203,7 +208,8 @@ func (s *PullRequestReassignSuite) TestNotAssigned() {
 }
 `
 
-	res, err := s.server.Client().Post(s.server.URL+"/pullRequest/reassign", "", bytes.NewBufferString(requestBody))
+	res, err := s.server.Client().
+		Post(s.server.URL+"/pullRequest/reassign", "", bytes.NewBufferString(requestBody))
 	s.Require().NoError(err)
 
 	defer res.Body.Close()
@@ -234,7 +240,8 @@ func (s *PullRequestReassignSuite) TestNoCandidates() {
 }
 `
 
-	res, err := s.server.Client().Post(s.server.URL+"/pullRequest/reassign", "", bytes.NewBufferString(requestBody))
+	res, err := s.server.Client().
+		Post(s.server.URL+"/pullRequest/reassign", "", bytes.NewBufferString(requestBody))
 	s.Require().NoError(err)
 
 	defer res.Body.Close()

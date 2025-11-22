@@ -1,4 +1,4 @@
-# pull_requests
+# pullrequests
 - id: 1
   pull_request_id: "pr_opened_id"
   name: "Opened PR"

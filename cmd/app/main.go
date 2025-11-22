@@ -17,7 +17,7 @@ func main() {
 
 	log.Info("starting service",
 		slog.String("env", cfg.Env),
-		slog.Int("port", cfg.HttpServer.Port),
+		slog.Int("port", cfg.HTTPServer.Port),
 	)
 	log.Debug("debug messages are enabled")
 

@@ -2,14 +2,15 @@ package users
 
 import (
 	"errors"
-	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
 	"log/slog"
 	"net/http"
 	"reviewer-assigner/internal/http/handlers"
 	"reviewer-assigner/internal/logger"
 	"reviewer-assigner/internal/service"
 	"reviewer-assigner/internal/service/users"
+
+	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 )
 
 var validate = validator.New()
@@ -43,7 +44,10 @@ func (h *UserHandler) SetIsActive(c *gin.Context) {
 	if err := validate.Struct(req); err != nil {
 		log.Warn("validation error", logger.ErrAttr(err))
 
-		c.JSON(http.StatusUnprocessableEntity, handlers.NewErrorResponse(handlers.ErrCodeInvalidBody))
+		c.JSON(
+			http.StatusUnprocessableEntity,
+			handlers.NewErrorResponse(handlers.ErrCodeInvalidBody),
+		)
 		return
 	}
 
@@ -64,21 +68,21 @@ func (h *UserHandler) GetReview(c *gin.Context) {
 	const op = "handlers.users.GetReview"
 	log := h.log.With(slog.String("op", op))
 
-	const UserIDParam = "user_id"
+	const userIDParam = "user_id"
 
-	userID, ok := c.GetQuery(UserIDParam)
+	userID, ok := c.GetQuery(userIDParam)
 	if !ok {
-		log.Warn(UserIDParam + " not found in query params")
+		log.Warn(userIDParam + " not found in query params")
 		c.JSON(http.StatusBadRequest, handlers.NewErrorResponse(handlers.ErrCodeInvalidQueryParam))
 		return
 	}
 	if userID == "" {
-		log.Warn(UserIDParam + " is empty")
+		log.Warn(userIDParam + " is empty")
 		c.JSON(http.StatusBadRequest, handlers.NewErrorResponse(handlers.ErrCodeInvalidQueryParam))
 		return
 	}
 
-	log.Info(UserIDParam+" param decoded", slog.Any(UserIDParam, userID))
+	log.Info(userIDParam+" param decoded", slog.Any(userIDParam, userID))
 
 	pullRequests, err := h.userService.GetReview(c.Copy(), userID)
 	if errors.Is(err, service.ErrTeamNotFound) {

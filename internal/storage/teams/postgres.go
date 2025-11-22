@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	teamsDomain "reviewer-assigner/internal/domain/teams"
+	"reviewer-assigner/internal/service"
+
 	trmpgx "github.com/avito-tech/go-transaction-manager/drivers/pgxv5/v2"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	teamsDomain "reviewer-assigner/internal/domain/teams"
-	"reviewer-assigner/internal/service"
 )
 
 type PostgresTeamRepository struct {
@@ -16,19 +17,25 @@ type PostgresTeamRepository struct {
 	getter *trmpgx.CtxGetter
 }
 
-func NewPostgresTeamRepository(pool *pgxpool.Pool, getter *trmpgx.CtxGetter) *PostgresTeamRepository {
+func NewPostgresTeamRepository(
+	pool *pgxpool.Pool,
+	getter *trmpgx.CtxGetter,
+) *PostgresTeamRepository {
 	return &PostgresTeamRepository{
 		pool:   pool,
 		getter: getter,
 	}
 }
 
-func (r *PostgresTeamRepository) GetTeamByName(ctx context.Context, teamName string) (*teamsDomain.Team, error) {
+func (r *PostgresTeamRepository) GetTeamByName(
+	ctx context.Context,
+	teamName string,
+) (*teamsDomain.Team, error) {
 	tx, err := r.getter.DefaultTrOrDB(ctx, r.pool).Begin(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer tx.Rollback(ctx)
+	defer func() { _ = tx.Rollback(ctx) }()
 
 	const queryGetTeamID = `
 		SELECT t.id FROM teams t WHERE t.name = $1
@@ -64,7 +71,7 @@ func (r *PostgresTeamRepository) GetTeamByName(ctx context.Context, teamName str
 
 	members := make([]teamsDomain.Member, 0, len(membersDB))
 	for _, member := range membersDB {
-		members = append(members, *DbToDomainMember(&member))
+		members = append(members, *DBToDomainMember(&member))
 	}
 
 	return &teamsDomain.Team{
@@ -73,12 +80,16 @@ func (r *PostgresTeamRepository) GetTeamByName(ctx context.Context, teamName str
 	}, nil
 }
 
-func (r *PostgresTeamRepository) SaveTeam(ctx context.Context, teamName string, members []teamsDomain.Member) (int64, error) {
+func (r *PostgresTeamRepository) SaveTeam(
+	ctx context.Context,
+	teamName string,
+	members []teamsDomain.Member,
+) (int64, error) {
 	tx, err := r.getter.DefaultTrOrDB(ctx, r.pool).Begin(ctx)
 	if err != nil {
 		return 0, fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer tx.Rollback(ctx)
+	defer func() { _ = tx.Rollback(ctx) }()
 
 	const queryInsertTeam = `
 	INSERT INTO teams (name) VALUES ($1)
@@ -112,12 +123,16 @@ func (r *PostgresTeamRepository) SaveTeam(ctx context.Context, teamName string, 
 	return teamID, nil
 }
 
-func (r *PostgresTeamRepository) UpdateMembers(ctx context.Context, teamName string, updatedMembers []teamsDomain.Member) error {
+func (r *PostgresTeamRepository) UpdateMembers(
+	ctx context.Context,
+	teamName string,
+	updatedMembers []teamsDomain.Member,
+) error {
 	tx, err := r.getter.DefaultTrOrDB(ctx, r.pool).Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer tx.Rollback(ctx)
+	defer func() { _ = tx.Rollback(ctx) }()
 
 	const queryTeamID = `
 	SELECT id FROM teams WHERE name = $1

@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/json"
-	"github.com/go-testfixtures/testfixtures/v3"
-	"github.com/stretchr/testify/suite"
 	"net/http"
 	"reviewer-assigner/internal/http/handlers"
 	"reviewer-assigner/internal/http/handlers/users"
 	"testing"
+
+	"github.com/go-testfixtures/testfixtures/v3"
+	"github.com/stretchr/testify/suite"
 )
 
 type UserSetActiveSuite struct {
@@ -49,7 +50,8 @@ func (s *UserSetActiveSuite) TestDefault() {
 }
 `
 
-	res, err := s.server.Client().Post(s.server.URL+"/users/setIsActive", "", bytes.NewBufferString(requestBody))
+	res, err := s.server.Client().
+		Post(s.server.URL+"/users/setIsActive", "", bytes.NewBufferString(requestBody))
 	s.Require().NoError(err)
 	defer res.Body.Close()
 
@@ -81,7 +83,8 @@ func (s *UserSetActiveSuite) TestUserNotFound() {
 }
 `
 
-	res, err := s.server.Client().Post(s.server.URL+"/users/setIsActive", "", bytes.NewBufferString(requestBody))
+	res, err := s.server.Client().
+		Post(s.server.URL+"/users/setIsActive", "", bytes.NewBufferString(requestBody))
 	s.Require().NoError(err)
 	defer res.Body.Close()
 
@@ -138,7 +141,9 @@ func (s *UserSetActiveSuite) TestValidation() {
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			res, err := s.server.Client().Post(s.server.URL+"/users/setIsActive", "", bytes.NewBufferString(tc.requestBody))
+			res, err := s.server.
+				Client().
+				Post(s.server.URL+"/users/setIsActive", "", bytes.NewBufferString(tc.requestBody))
 			s.Require().NoError(err)
 			defer res.Body.Close()
 

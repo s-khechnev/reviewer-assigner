@@ -1,8 +1,8 @@
-package reviewer_reassigners
+package reassigners
 
 import (
 	"reviewer-assigner/internal/domain"
-	reviewerPickers "reviewer-assigner/internal/domain/pull_requests/reviewer_pickers"
+	reviewerPickers "reviewer-assigner/internal/domain/pullrequests/pickers"
 	teamsDomain "reviewer-assigner/internal/domain/teams"
 )
 

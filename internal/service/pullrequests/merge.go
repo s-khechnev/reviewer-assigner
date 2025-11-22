@@ -1,4 +1,4 @@
-package pull_requests
+package pullrequests
 
 import (
 	"context"
@@ -6,12 +6,15 @@ import (
 	"fmt"
 	"log/slog"
 	"reviewer-assigner/internal/domain"
-	prDomain "reviewer-assigner/internal/domain/pull_requests"
+	prsDomain "reviewer-assigner/internal/domain/pullrequests"
 	"reviewer-assigner/internal/logger"
 	"reviewer-assigner/internal/service"
 )
 
-func (s *PullRequestService) Merge(ctx context.Context, pullRequestID string) (pullRequest *prDomain.PullRequest, err error) {
+func (s *PullRequestService) Merge(
+	ctx context.Context,
+	pullRequestID string,
+) (pullRequest *prsDomain.PullRequest, err error) {
 	const op = "services.pull_requests.Merge"
 	log := s.log.With(
 		slog.String("op", op),

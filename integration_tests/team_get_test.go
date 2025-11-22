@@ -3,12 +3,13 @@ package integration_tests
 import (
 	"database/sql"
 	"encoding/json"
-	"github.com/go-testfixtures/testfixtures/v3"
-	"github.com/stretchr/testify/suite"
 	"net/http"
 	"reviewer-assigner/internal/http/handlers"
 	teamsHandler "reviewer-assigner/internal/http/handlers/teams"
 	"testing"
+
+	"github.com/go-testfixtures/testfixtures/v3"
+	"github.com/stretchr/testify/suite"
 )
 
 type TeamGetSuite struct {

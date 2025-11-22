@@ -36,6 +36,8 @@ var errCodeMessages = map[ErrCode]string{
 	ErrCodePullRequestNoCandidate: "no active replacement candidate in team",
 
 	ErrCodeResourceNotFound: "resource not found",
+
+	ErrCodeUnknown: "unknown error",
 }
 
 type ErrorResponse struct {

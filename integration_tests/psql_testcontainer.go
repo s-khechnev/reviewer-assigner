@@ -3,22 +3,24 @@ package integration_tests
 import (
 	"context"
 	"fmt"
+	"net"
 	"time"
 
 	"github.com/docker/go-connections/nat"
-	_ "github.com/jackc/pgx/v5/stdlib"
-	_ "github.com/lib/pq"
+	_ "github.com/jackc/pgx/v5/stdlib" //nolint:revive
+	_ "github.com/lib/pq"              //nolint:revive
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 // PostgreSQLContainer wraps testcontainers.Container with extra methods.
-type (
-	PostgreSQLContainer struct {
-		testcontainers.Container
-		Config PostgreSQLContainerConfig
-	}
+type PostgreSQLContainer struct {
+	testcontainers.Container
 
+	Config PostgreSQLContainerConfig
+}
+
+type (
 	PostgreSQLContainerOption func(c *PostgreSQLContainerConfig)
 
 	PostgreSQLContainerConfig struct {
@@ -31,13 +33,11 @@ type (
 	}
 )
 
-// GetDSN returns DB connection URL.
-func (c PostgreSQLContainer) GetDSN() string {
-	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", c.Config.User, c.Config.Password, c.Config.Host, c.Config.MappedPort, c.Config.Database)
-}
-
 // NewPostgreSQLContainer creates and starts a PostgreSQL container.
-func NewPostgreSQLContainer(ctx context.Context, opts ...PostgreSQLContainerOption) (*PostgreSQLContainer, error) {
+func NewPostgreSQLContainer(
+	ctx context.Context,
+	opts ...PostgreSQLContainerOption,
+) (*PostgreSQLContainer, error) {
 	const (
 		psqlImage = "postgres"
 		psqlPort  = "5432"
@@ -93,10 +93,20 @@ func NewPostgreSQLContainer(ctx context.Context, opts ...PostgreSQLContainerOpti
 	config.MappedPort = mappedPort.Port()
 	config.Host = host
 
-	fmt.Println("Host:", config.Host, config.MappedPort)
-
 	return &PostgreSQLContainer{
 		Container: container,
 		Config:    config,
 	}, nil
+}
+
+// GetDSN returns DB connection URL.
+func (c PostgreSQLContainer) GetDSN() string {
+	addr := net.JoinHostPort(c.Config.Host, c.Config.MappedPort)
+	return fmt.Sprintf(
+		"postgres://%s:%s@%s/%s?sslmode=disable",
+		c.Config.User,
+		c.Config.Password,
+		addr,
+		c.Config.Database,
+	)
 }

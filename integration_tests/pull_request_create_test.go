@@ -4,14 +4,15 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/json"
-	"github.com/go-testfixtures/testfixtures/v3"
-	"github.com/stretchr/testify/suite"
 	"html/template"
 	"net/http"
 	"reviewer-assigner/internal/http/handlers"
-	prHandler "reviewer-assigner/internal/http/handlers/pull_requests"
+	prHandler "reviewer-assigner/internal/http/handlers/pullrequests"
 	"testing"
 	"time"
+
+	"github.com/go-testfixtures/testfixtures/v3"
+	"github.com/stretchr/testify/suite"
 )
 
 type PullRequestCreateSuite struct {
@@ -52,7 +53,8 @@ func (s *PullRequestCreateSuite) TestCreateDefault() {
 }
 `
 
-	res, err := s.server.Client().Post(s.server.URL+"/pullRequest/create", "", bytes.NewBufferString(requestBody))
+	res, err := s.server.Client().
+		Post(s.server.URL+"/pullRequest/create", "", bytes.NewBufferString(requestBody))
 	s.Require().NoError(err)
 
 	defer res.Body.Close()
@@ -90,7 +92,7 @@ func (s *PullRequestCreateSuite) TestCreateDefault() {
 }
 `
 
-	expected := s.loader.LoadTemplate(expectedTemplate, map[string]interface{}{
+	expected := s.loader.LoadTemplate(expectedTemplate, map[string]any{
 		"id0":       response.AssignedReviewers[0],
 		"id1":       response.AssignedReviewers[1],
 		"createdAt": template.HTML(response.CreatedAt.Format(time.RFC3339Nano)),
@@ -108,7 +110,8 @@ func (s *PullRequestCreateSuite) TestCreateNotFoundAuthor() {
 }
 `
 
-	res, err := s.server.Client().Post(s.server.URL+"/pullRequest/create", "", bytes.NewBufferString(requestBody))
+	res, err := s.server.Client().
+		Post(s.server.URL+"/pullRequest/create", "", bytes.NewBufferString(requestBody))
 	s.Require().NoError(err)
 
 	defer res.Body.Close()
@@ -140,7 +143,8 @@ func (s *PullRequestCreateSuite) TestCreateAlreadyExists() {
 }
 `
 
-	res, err := s.server.Client().Post(s.server.URL+"/pullRequest/create", "", bytes.NewBufferString(requestBody))
+	res, err := s.server.Client().
+		Post(s.server.URL+"/pullRequest/create", "", bytes.NewBufferString(requestBody))
 	s.Require().NoError(err)
 
 	defer res.Body.Close()
@@ -203,7 +207,9 @@ func (s *TeamAddSuite) TestCreateMissingRequiredFields() {
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			res, err := s.server.Client().Post(s.server.URL+"/pullRequest/create", "", bytes.NewBufferString(tc.requestBody))
+			res, err := s.server.
+				Client().
+				Post(s.server.URL+"/pullRequest/create", "", bytes.NewBufferString(tc.requestBody))
 			s.Require().NoError(err)
 			defer res.Body.Close()
 

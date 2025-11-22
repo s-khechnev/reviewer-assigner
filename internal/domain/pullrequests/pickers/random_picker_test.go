@@ -1,10 +1,11 @@
-package reviewer_pickers
+package pickers
 
 import (
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	teamsDomain "reviewer-assigner/internal/domain/teams"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestRandomReviewerPicker_Pick_TableDriven(t *testing.T) {

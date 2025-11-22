@@ -1,7 +1,7 @@
 package users
 
 import (
-	prDomain "reviewer-assigner/internal/domain/pull_requests"
+	prsDomain "reviewer-assigner/internal/domain/pullrequests"
 	usersDomain "reviewer-assigner/internal/domain/users"
 )
 
@@ -34,7 +34,7 @@ func domainToSetIsActiveResponse(user *usersDomain.User) *SetIsActiveResponse {
 	}
 }
 
-func domainToGetReviewResponse(userID string, prs []prDomain.PullRequestShort) *GetReviewResponse {
+func domainToGetReviewResponse(userID string, prs []prsDomain.PullRequestShort) *GetReviewResponse {
 	prsResponse := make([]PullRequestResponse, 0, len(prs))
 	for _, pr := range prs {
 		prsResponse = append(prsResponse, PullRequestResponse{

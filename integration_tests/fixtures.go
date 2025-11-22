@@ -39,7 +39,6 @@ func (l *FixtureLoader) LoadString(path string) string {
 }
 
 func (l *FixtureLoader) LoadTemplate(s string, data any) string {
-	//tempData := l.LoadString(path)
 	const defaultName = "default"
 
 	temp, err := template.New(defaultName).Parse(s)
