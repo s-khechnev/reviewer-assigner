@@ -47,7 +47,7 @@ func (h *TeamHandler) AddTeam(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"team": domainToTeamResponse(newTeam)})
+	c.JSON(http.StatusCreated, domainToAddTeamResponse(newTeam))
 }
 
 func (h *TeamHandler) GetTeam(c *gin.Context) {
@@ -80,5 +80,5 @@ func (h *TeamHandler) GetTeam(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, domainToTeamResponse(team))
+	c.JSON(http.StatusOK, domainToGetTeamResponse(team))
 }

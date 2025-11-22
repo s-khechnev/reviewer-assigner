@@ -64,8 +64,6 @@ func Run(ctx context.Context, cfg *config.Config, log *slog.Logger) {
 	userHandler := usersHandler.NewUserHandler(log, userService)
 	pullRequestHandler := prHandler.NewPullRequestHandler(log, pullRequestService)
 
-	r := gin.New()
-
 	switch cfg.Env {
 	case config.EnvProd:
 		gin.SetMode(gin.ReleaseMode)
@@ -73,31 +71,11 @@ func Run(ctx context.Context, cfg *config.Config, log *slog.Logger) {
 		gin.SetMode(gin.DebugMode)
 	}
 
-	r.Use(gin.Recovery())
-	r.Use(sloggin.New(log))
-
-	{
-		teamGroup := r.Group("/team")
-		teamGroup.POST("/add", teamHandler.AddTeam)
-		teamGroup.GET("/get", teamHandler.GetTeam)
-	}
-
-	{
-		userGroup := r.Group("/users")
-		userGroup.POST("/setIsActive", userHandler.SetIsActive)
-		userGroup.GET("/getReview", userHandler.GetReview)
-	}
-
-	{
-		pullRequestGroup := r.Group("/pullRequest")
-		pullRequestGroup.POST("/create", pullRequestHandler.Create)
-		pullRequestGroup.POST("/merge", pullRequestHandler.Merge)
-		pullRequestGroup.POST("/reassign", pullRequestHandler.Reassign)
-	}
+	router := NewRouter(log, teamHandler, userHandler, pullRequestHandler)
 
 	server := &http.Server{
 		Addr:         fmt.Sprintf("%s:%d", cfg.HttpServer.Address, cfg.HttpServer.Port),
-		Handler:      r,
+		Handler:      router,
 		IdleTimeout:  cfg.HttpServer.IdleTimeout,
 		WriteTimeout: cfg.HttpServer.Timeout,
 		ReadTimeout:  cfg.HttpServer.Timeout,
@@ -121,4 +99,37 @@ func Run(ctx context.Context, cfg *config.Config, log *slog.Logger) {
 	if err = server.Shutdown(ctx); err != nil {
 		log.Error("failed to shutdown", logger.ErrAttr(err))
 	}
+}
+
+func NewRouter(
+	log *slog.Logger,
+	teamHandler *teamsHandler.TeamHandler,
+	userHandler *usersHandler.UserHandler,
+	pullRequestHandler *prHandler.PullRequestHandler,
+) *gin.Engine {
+	r := gin.New()
+
+	r.Use(gin.Recovery())
+	r.Use(sloggin.New(log))
+
+	{
+		teamGroup := r.Group("/team")
+		teamGroup.POST("/add", teamHandler.AddTeam)
+		teamGroup.GET("/get", teamHandler.GetTeam)
+	}
+
+	{
+		userGroup := r.Group("/users")
+		userGroup.POST("/setIsActive", userHandler.SetIsActive)
+		userGroup.GET("/getReview", userHandler.GetReview)
+	}
+
+	{
+		pullRequestGroup := r.Group("/pullRequest")
+		pullRequestGroup.POST("/create", pullRequestHandler.Create)
+		pullRequestGroup.POST("/merge", pullRequestHandler.Merge)
+		pullRequestGroup.POST("/reassign", pullRequestHandler.Reassign)
+	}
+
+	return r
 }

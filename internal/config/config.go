@@ -37,7 +37,7 @@ type DB struct {
 
 const VarConfigPath = "CONFIG_PATH"
 
-func GetConfig() *Config {
+func Must() *Config {
 	configPath := os.Getenv(VarConfigPath)
 	if configPath == "" {
 		log.Fatalf("env variable %s not set", VarConfigPath)
@@ -58,7 +58,7 @@ func GetConfig() *Config {
 		log.Fatalf("cannot read .env file: %v", err)
 	}
 
-	if err := cleanenv.ReadConfig(configPath, &config); err != nil {
+	if err = cleanenv.ReadConfig(configPath, &config); err != nil {
 		log.Fatalf("cannot read config file: %v", err)
 	}
 

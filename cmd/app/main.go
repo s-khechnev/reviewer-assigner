@@ -12,7 +12,7 @@ import (
 func main() {
 	ctx := context.Background()
 
-	cfg := config.GetConfig()
+	cfg := config.Must()
 	log := logger.New(cfg.Env)
 
 	log.Info("starting service",
