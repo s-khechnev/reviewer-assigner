@@ -1,6 +1,6 @@
 FROM gomicro/goose
 
-WORKDIR migrations
+WORKDIR /migrations
 
 COPY migrations/postgres .
 

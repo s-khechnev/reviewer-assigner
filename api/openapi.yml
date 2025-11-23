@@ -121,6 +121,28 @@ components:
         status:
           type: string
           enum: [OPEN, MERGED]
+    Assignment:
+      type: object
+      required: [ user_id, username, count ]
+      properties:
+        user_id:
+          type: string
+          description: Идентификатор пользователя
+        username:
+          type: string
+          description: Имя пользователя
+        count:
+          type: integer
+          minimum: 0
+          description: Количество назначений на PR
+    Assignments:
+      type: object
+      required: [ assignments ]
+      properties:
+        assignments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Assignment'
 
 paths:
   /team/add:
@@ -434,6 +456,9 @@ paths:
           required: false
           schema:
             type: string
+            enum:
+              - open
+              - merged
           description: |
             Фильтр по статусу PR
             - open - только открытые PR
@@ -452,26 +477,7 @@ paths:
           description: Статистика назначений успешно получена
           content:
             application/json:
-              schema:
-                type: object
-                required: [ assignments ]
-                properties:
-                  assignments:
-                    type: array
-                    items:
-                      type: object
-                      required: [ user_id, username, count ]
-                      properties:
-                        user_id:
-                          type: string
-                          description: Идентификатор пользователя
-                        username:
-                          type: string
-                          description: Имя пользователя
-                        count:
-                          type: integer
-                          minimum: 0
-                          description: Количество назначений на PR
+              schema: { $ref: '#/components/schemas/Assignments' }
               examples:
                 default:
                   summary: Пример успешного ответа
