@@ -102,12 +102,14 @@ func Run(ctx context.Context, cfg *config.Config, log *slog.Logger) {
 	log.Info("shutting down service")
 
 	const timeoutToShutdown = 5 * time.Second
-	ctx, cancel := context.WithTimeout(context.Background(), timeoutToShutdown)
+	ctx, cancel := context.WithTimeout(ctx, timeoutToShutdown)
 	defer cancel()
 
 	if err = server.Shutdown(ctx); err != nil {
 		log.Error("failed to shutdown", logger.ErrAttr(err))
 	}
+
+	pool.Close()
 }
 
 func NewRouter(
