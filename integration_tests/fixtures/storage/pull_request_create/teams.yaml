@@ -3,3 +3,12 @@
 
 - id: 2
   name: mobile
+
+- id: 3
+  name: solo
+
+- id: 4
+  name: only_one_active_author
+
+- id: 5
+  name: only_author_and_one_user_active

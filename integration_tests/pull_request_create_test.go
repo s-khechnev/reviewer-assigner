@@ -101,6 +101,199 @@ func (s *PullRequestCreateSuite) TestCreateDefault() {
 	JSONEq(s.T(), expected, response)
 }
 
+func (s *PullRequestCreateSuite) TestCreateWithSingleReviewer() {
+	requestBody := `
+{
+  "pull_request_id": "pr_with_single_reviewer_id",
+  "pull_request_name": "PR with single reviewer",
+  "author_id": "u4_Sarah"
+}
+`
+
+	res, err := s.server.Client().
+		Post(s.server.URL+"/pullRequest/create", "", bytes.NewBufferString(requestBody))
+	s.Require().NoError(err)
+
+	defer res.Body.Close()
+
+	s.Require().Equal(http.StatusCreated, res.StatusCode)
+
+	response := prHandler.CreatePullRequestResponse{}
+	err = json.NewDecoder(res.Body).Decode(&response)
+	s.Require().NoError(err)
+
+	s.Require().Len(response.AssignedReviewers, 1)
+
+	expectedReviewers := map[string]struct{}{
+		"u5_Mike": {},
+	}
+	for _, reviewer := range response.AssignedReviewers {
+		_, ok := expectedReviewers[reviewer]
+		s.Require().True(ok)
+	}
+
+	expectedTemplate := `
+{
+  "pr": {
+    "pull_request_id": "pr_with_single_reviewer_id",
+    "pull_request_name": "PR with single reviewer",
+    "author_id": "u4_Sarah",
+    "status": "OPEN",
+    "assigned_reviewers": [
+      "{{.id0}}"
+    ],
+	"created_at": "{{.createdAt}}"
+  }
+}
+`
+
+	expected := s.loader.LoadTemplate(expectedTemplate, map[string]any{
+		"id0":       response.AssignedReviewers[0],
+		"createdAt": template.HTML(response.CreatedAt.Format(time.RFC3339Nano)),
+	})
+
+	JSONEq(s.T(), expected, response)
+}
+
+func (s *PullRequestCreateSuite) TestCreateWithNoReviewers() {
+	requestBody := `
+{
+  "pull_request_id": "pr_with_no_reviewers_id",
+  "pull_request_name": "PR with no reviewers",
+  "author_id": "u6_Ivan"
+}
+`
+
+	res, err := s.server.Client().
+		Post(s.server.URL+"/pullRequest/create", "", bytes.NewBufferString(requestBody))
+	s.Require().NoError(err)
+
+	defer res.Body.Close()
+
+	s.Require().Equal(http.StatusCreated, res.StatusCode)
+
+	response := prHandler.CreatePullRequestResponse{}
+	err = json.NewDecoder(res.Body).Decode(&response)
+	s.Require().NoError(err)
+
+	s.Require().Len(response.AssignedReviewers, 0)
+
+	expectedTemplate := `
+{
+  "pr": {
+    "pull_request_id": "pr_with_no_reviewers_id",
+    "pull_request_name": "PR with no reviewers",
+    "author_id": "u6_Ivan",
+    "status": "OPEN",
+    "assigned_reviewers": [],
+	"created_at": "{{.createdAt}}"
+  }
+}
+`
+
+	expected := s.loader.LoadTemplate(expectedTemplate, map[string]any{
+		"createdAt": template.HTML(response.CreatedAt.Format(time.RFC3339Nano)),
+	})
+
+	JSONEq(s.T(), expected, response)
+}
+
+func (s *PullRequestCreateSuite) TestCreateWithNoActiveMembers() {
+	requestBody := `
+{
+  "pull_request_id": "pr_with_no_active_reviewers_id",
+  "pull_request_name": "PR with no active reviewers",
+  "author_id": "u7_ActiveAuthor"
+}
+`
+
+	res, err := s.server.Client().
+		Post(s.server.URL+"/pullRequest/create", "", bytes.NewBufferString(requestBody))
+	s.Require().NoError(err)
+
+	defer res.Body.Close()
+
+	s.Require().Equal(http.StatusCreated, res.StatusCode)
+
+	response := prHandler.CreatePullRequestResponse{}
+	err = json.NewDecoder(res.Body).Decode(&response)
+	s.Require().NoError(err)
+
+	s.Require().Len(response.AssignedReviewers, 0)
+
+	expectedTemplate := `
+{
+  "pr": {
+    "pull_request_id": "pr_with_no_active_reviewers_id",
+    "pull_request_name": "PR with no active reviewers",
+    "author_id": "u7_ActiveAuthor",
+    "status": "OPEN",
+    "assigned_reviewers": [],
+	"created_at": "{{.createdAt}}"
+  }
+}
+`
+
+	expected := s.loader.LoadTemplate(expectedTemplate, map[string]any{
+		"createdAt": template.HTML(response.CreatedAt.Format(time.RFC3339Nano)),
+	})
+
+	JSONEq(s.T(), expected, response)
+}
+
+func (s *PullRequestCreateSuite) TestCreateWithOneActiveMembers() {
+	requestBody := `
+{
+  "pull_request_id": "pr_with_one_active_reviewers_id",
+  "pull_request_name": "PR with one active reviewers",
+  "author_id": "u10_ActiveAuthor"
+}
+`
+
+	res, err := s.server.Client().
+		Post(s.server.URL+"/pullRequest/create", "", bytes.NewBufferString(requestBody))
+	s.Require().NoError(err)
+
+	defer res.Body.Close()
+
+	s.Require().Equal(http.StatusCreated, res.StatusCode)
+
+	response := prHandler.CreatePullRequestResponse{}
+	err = json.NewDecoder(res.Body).Decode(&response)
+	s.Require().NoError(err)
+
+	s.Require().Len(response.AssignedReviewers, 1)
+
+	expectedReviewers := map[string]struct{}{
+		"u11_ActiveUser": {},
+	}
+	for _, reviewer := range response.AssignedReviewers {
+		_, ok := expectedReviewers[reviewer]
+		s.Require().True(ok)
+	}
+
+	expectedTemplate := `
+{
+  "pr": {
+    "pull_request_id": "pr_with_one_active_reviewers_id",
+    "pull_request_name": "PR with one active reviewers",
+    "author_id": "u10_ActiveAuthor",
+    "status": "OPEN",
+    "assigned_reviewers": [
+		"u11_ActiveUser"
+	],
+	"created_at": "{{.createdAt}}"
+  }
+}
+`
+
+	expected := s.loader.LoadTemplate(expectedTemplate, map[string]any{
+		"createdAt": template.HTML(response.CreatedAt.Format(time.RFC3339Nano)),
+	})
+
+	JSONEq(s.T(), expected, response)
+}
+
 func (s *PullRequestCreateSuite) TestCreateNotFoundAuthor() {
 	requestBody := `
 {

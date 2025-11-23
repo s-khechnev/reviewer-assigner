@@ -1,3 +1,4 @@
+# payments
 - id: 1
   user_id: "u1_Alice"
   name: "Alice"
@@ -16,6 +17,7 @@
   team_id: 1
   is_active: true
 
+# mobile
 - id: 4
   user_id: "u4_Sarah"
   name: "Sarah"
@@ -28,3 +30,53 @@
   team_id: 2
   is_active: true
 
+# solo
+- id: 6
+  user_id: "u6_Ivan"
+  name: "Ivan"
+  team_id: 3
+  is_active: true
+
+# only_one_active_author
+- id: 7
+  user_id: "u7_ActiveAuthor"
+  name: "ActiveAuthor"
+  team_id: 4
+  is_active: true
+
+- id: 8
+  user_id: "u8_InactiveChel"
+  name: "InactiveChel"
+  team_id: 4
+  is_active: false
+
+- id: 9
+  user_id: "u9_InactiveChel"
+  name: "InactiveChel"
+  team_id: 4
+  is_active: false
+
+# only_author_and_one_user_active
+- id: 10
+  user_id: "u10_ActiveAuthor"
+  name: "u10ActiveAuthor"
+  team_id: 5
+  is_active: true
+
+- id: 11
+  user_id: "u11_ActiveUser"
+  name: "u11_ActiveUser"
+  team_id: 5
+  is_active: true
+
+- id: 12
+  user_id: "u12_InactiveUser"
+  name: "u12_InactiveUser"
+  team_id: 5
+  is_active: false
+
+- id: 13
+  user_id: "u13_InactiveUser"
+  name: "u13_InactiveUser"
+  team_id: 5
+  is_active: false
