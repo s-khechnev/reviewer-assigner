@@ -1,0 +1,23 @@
+- id: 1
+  pull_request_id: "pr1_open_payments"
+  name: "PR1 Open Payments"
+  author_id: "u1_payments_author"
+  status: "OPEN"
+
+- id: 2
+  pull_request_id: "pr2_merged_payments"
+  name: "PR2 Merged Payments"
+  author_id: "u1_payments_author"
+  status: "MERGED"
+
+- id: 3
+  pull_request_id: "pr3_open_backend"
+  name: "PR3 Open Backend"
+  author_id: "u4_backend_author"
+  status: "OPEN"
+
+- id: 4
+  pull_request_id: "pr4_merged_backend"
+  name: "PR4 Merged Backend"
+  author_id: "u4_backend_author"
+  status: "MERGED"

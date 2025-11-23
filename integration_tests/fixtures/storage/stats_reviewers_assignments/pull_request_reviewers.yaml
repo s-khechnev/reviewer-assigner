@@ -1,0 +1,14 @@
+- pull_request_id: 1
+  reviewer_id: 2  # u2_payments_reviewer
+
+- pull_request_id: 1
+  reviewer_id: 3  # u3_payments_reviewer_inactive
+
+- pull_request_id: 2
+  reviewer_id: 2  # u2_payments_reviewer
+
+- pull_request_id: 3
+  reviewer_id: 5  # u5_backend_reviewer
+
+- pull_request_id: 4
+  reviewer_id: 5  # u5_backend_reviewer

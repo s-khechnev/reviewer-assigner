@@ -1,0 +1,29 @@
+- id: 1
+  user_id: "u1_payments_author"
+  name: "User1 Payments Author"
+  team_id: 1
+  is_active: true
+
+- id: 2
+  user_id: "u2_payments_reviewer"
+  name: "User2 Payments Reviewer"
+  team_id: 1
+  is_active: true
+
+- id: 3
+  user_id: "u3_payments_reviewer_inactive"
+  name: "User3 Payments Reviewer Inactive"
+  team_id: 1
+  is_active: false
+
+- id: 4
+  user_id: "u4_backend_author"
+  name: "User4 Backend Author"
+  team_id: 2
+  is_active: true
+
+- id: 5
+  user_id: "u5_backend_reviewer"
+  name: "User5 Backend Reviewer"
+  team_id: 2
+  is_active: true

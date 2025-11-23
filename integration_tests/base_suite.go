@@ -10,6 +10,7 @@ import (
 	reviewerPicker "reviewer-assigner/internal/domain/pullrequests/pickers"
 	reviewerAssigner "reviewer-assigner/internal/domain/pullrequests/reassigners"
 	prsHandler "reviewer-assigner/internal/http/handlers/pullrequests"
+	statsHandler "reviewer-assigner/internal/http/handlers/stats"
 	teamsHandler "reviewer-assigner/internal/http/handlers/teams"
 	usersHandler "reviewer-assigner/internal/http/handlers/users"
 	prsService "reviewer-assigner/internal/service/pullrequests"
@@ -17,6 +18,7 @@ import (
 	usersService "reviewer-assigner/internal/service/users"
 	"reviewer-assigner/internal/storage/postgres"
 	prsRepo "reviewer-assigner/internal/storage/pullrequests"
+	statsRepo "reviewer-assigner/internal/storage/stats"
 	teamsRepo "reviewer-assigner/internal/storage/teams"
 	usersRepo "reviewer-assigner/internal/storage/users"
 	"time"
@@ -78,6 +80,7 @@ func (s *BaseSuite) SetupSuite() {
 		pool,
 		trmpgx.DefaultCtxGetter,
 	)
+	statRepo := statsRepo.NewPostgresStatsRepository(pool, trmpgx.DefaultCtxGetter)
 
 	teamService := teamsService.NewTeamService(l, teamRepo, txManager)
 	userService := usersService.NewUserService(l, userRepo, pullRequestRepo, txManager)
@@ -90,12 +93,15 @@ func (s *BaseSuite) SetupSuite() {
 		reviewerAssigner.NewRandomReviewerReassigner(),
 		txManager,
 	)
+	statHandler := statsHandler.NewStatHandler(l, statRepo)
 
 	teamHandler := teamsHandler.NewTeamHandler(l, teamService)
 	userHandler := usersHandler.NewUserHandler(l, userService)
 	pullRequestHandler := prsHandler.NewPullRequestHandler(l, pullRequestService)
 
-	s.server = httptest.NewServer(app.NewRouter(l, teamHandler, userHandler, pullRequestHandler))
+	s.server = httptest.NewServer(
+		app.NewRouter(l, teamHandler, userHandler, pullRequestHandler, statHandler),
+	)
 
 	s.loader = NewFixtureLoader(s.T(), Fixtures)
 }

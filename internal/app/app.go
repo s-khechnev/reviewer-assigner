@@ -11,7 +11,8 @@ import (
 	"reviewer-assigner/internal/config"
 	reviewerPicker "reviewer-assigner/internal/domain/pullrequests/pickers"
 	reviewerAssigner "reviewer-assigner/internal/domain/pullrequests/reassigners"
-	prHandler "reviewer-assigner/internal/http/handlers/pullrequests"
+	prsHandler "reviewer-assigner/internal/http/handlers/pullrequests"
+	statsHandler "reviewer-assigner/internal/http/handlers/stats"
 	teamsHandler "reviewer-assigner/internal/http/handlers/teams"
 	usersHandler "reviewer-assigner/internal/http/handlers/users"
 	"reviewer-assigner/internal/logger"
@@ -20,6 +21,7 @@ import (
 	usersService "reviewer-assigner/internal/service/users"
 	"reviewer-assigner/internal/storage/postgres"
 	pullRequestsRepo "reviewer-assigner/internal/storage/pullrequests"
+	statsRepo "reviewer-assigner/internal/storage/stats"
 	teamsRepo "reviewer-assigner/internal/storage/teams"
 	usersRepo "reviewer-assigner/internal/storage/users"
 	"syscall"
@@ -51,6 +53,7 @@ func Run(ctx context.Context, cfg *config.Config, log *slog.Logger) {
 		pool,
 		trmpgx.DefaultCtxGetter,
 	)
+	statRepo := statsRepo.NewPostgresStatsRepository(pool, trmpgx.DefaultCtxGetter)
 
 	teamService := teamsService.NewTeamService(log, teamRepo, txManager)
 	userService := usersService.NewUserService(log, userRepo, pullRequestRepo, txManager)
@@ -66,7 +69,8 @@ func Run(ctx context.Context, cfg *config.Config, log *slog.Logger) {
 
 	teamHandler := teamsHandler.NewTeamHandler(log, teamService)
 	userHandler := usersHandler.NewUserHandler(log, userService)
-	pullRequestHandler := prHandler.NewPullRequestHandler(log, pullRequestService)
+	pullRequestHandler := prsHandler.NewPullRequestHandler(log, pullRequestService)
+	statHandler := statsHandler.NewStatHandler(log, statRepo)
 
 	switch cfg.Env {
 	case config.EnvProd:
@@ -75,7 +79,7 @@ func Run(ctx context.Context, cfg *config.Config, log *slog.Logger) {
 		gin.SetMode(gin.DebugMode)
 	}
 
-	router := NewRouter(log, teamHandler, userHandler, pullRequestHandler)
+	router := NewRouter(log, teamHandler, userHandler, pullRequestHandler, statHandler)
 
 	server := &http.Server{
 		Addr:         fmt.Sprintf("%s:%d", cfg.HTTPServer.Address, cfg.HTTPServer.Port),
@@ -110,7 +114,8 @@ func NewRouter(
 	log *slog.Logger,
 	teamHandler *teamsHandler.TeamHandler,
 	userHandler *usersHandler.UserHandler,
-	pullRequestHandler *prHandler.PullRequestHandler,
+	pullRequestHandler *prsHandler.PullRequestHandler,
+	statHandler *statsHandler.StatHandler,
 ) *gin.Engine {
 	r := gin.New()
 
@@ -134,6 +139,14 @@ func NewRouter(
 		pullRequestGroup.POST("/create", pullRequestHandler.Create)
 		pullRequestGroup.POST("/merge", pullRequestHandler.Merge)
 		pullRequestGroup.POST("/reassign", pullRequestHandler.Reassign)
+	}
+
+	{
+		statsGroup := r.Group("/stats")
+		{
+			reviewerGroup := statsGroup.Group("/reviewers")
+			reviewerGroup.GET("/assignments", statHandler.GetStatsReviewersAssignments)
+		}
 	}
 
 	return r

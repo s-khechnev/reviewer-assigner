@@ -7,6 +7,7 @@ tags:
   - name: Teams
   - name: Users
   - name: PullRequests
+  - name: Stats
   - name: Health
 
 components:
@@ -419,3 +420,69 @@ paths:
                     pull_request_name: Add search
                     author_id: u1
                     status: OPEN
+
+  /stats/reviewers/assignments:
+    get:
+      tags: [ Stats ]
+      summary: Получить статистику назначений ревьюеров
+      description: |
+        Возвращает статистику по количеству назначений на PR.
+        Позволяет фильтровать по статусу PR и активности пользователей.
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+          description: |
+            Фильтр по статусу PR
+            - open - только открытые PR
+            - merged - только мерженные PR  
+            - Если параметр не указан - все PR (вне зависимости от статуса)
+        - name: active_only
+          in: query
+          required: false
+          description: |
+            flag-like параметр для фильтра по активности пользователей
+            - Если параметр указан - только активные пользователи
+            - Если параметр не указан - все пользователи
+          allowEmptyValue: true
+      responses:
+        '200':
+          description: Статистика назначений успешно получена
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ assignments ]
+                properties:
+                  assignments:
+                    type: array
+                    items:
+                      type: object
+                      required: [ user_id, username, count ]
+                      properties:
+                        user_id:
+                          type: string
+                          description: Идентификатор пользователя
+                        username:
+                          type: string
+                          description: Имя пользователя
+                        count:
+                          type: integer
+                          minimum: 0
+                          description: Количество назначений на PR
+              examples:
+                default:
+                  summary: Пример успешного ответа
+                  value:
+                    assignments:
+                      - user_id: "u2"
+                        username: "Bob"
+                        count: 5
+                      - user_id: "u3"
+                        username: "Charlie"
+                        count: 3
+                      - user_id: "u4"
+                        username: "David"
+                        count: 1
