@@ -1,4 +1,4 @@
-.PHONY: all migrate_up migrate_down lint
+.PHONY: all migrate_up migrate_down lint test
 
 all:
 	docker-compose up
@@ -11,3 +11,6 @@ migrate_down:
 
 lint:
 	golangci-lint run ./...
+
+test:
+	go test -v ./...

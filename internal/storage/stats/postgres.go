@@ -32,13 +32,13 @@ func (r *PostgresStatsRepository) GetStatsReviewersAssignments(
 ) ([]stats.UserAssignment, error) {
 	// TODO: add pagination
 	const queryBase = `
-		SELECT
-			u.user_id,
-			u.name as username,
-			COUNT(prr.pull_request_id) as assignment_count
-		FROM users u
-		LEFT JOIN pull_request_reviewers prr ON u.id = prr.reviewer_id
-		LEFT JOIN pull_requests pr ON prr.pull_request_id = pr.id
+	SELECT
+		u.user_id,
+		u.name as username,
+		COUNT(prr.pull_request_id) as assignment_count
+	FROM users u
+	LEFT JOIN pull_request_reviewers prr ON u.id = prr.reviewer_id
+	LEFT JOIN pull_requests pr ON prr.pull_request_id = pr.id
 	`
 
 	var queryBuilder strings.Builder

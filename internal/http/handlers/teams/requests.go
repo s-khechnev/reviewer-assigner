@@ -4,7 +4,7 @@ import teamsDomain "reviewer-assigner/internal/domain/teams"
 
 type AddTeamRequest struct {
 	TeamName string          `json:"team_name" validate:"required"`
-	Members  []MemberRequest `json:"members"   validate:"required,dive"`
+	Members  []MemberRequest `json:"members"   validate:"required,min=1,dive"`
 }
 
 type MemberRequest struct {

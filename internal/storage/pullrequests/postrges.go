@@ -33,17 +33,14 @@ func (r *PostgresPullRequestRepository) GetPullRequestsForReview(
 	userID string,
 ) ([]prsDomain.PullRequestShort, error) {
 	const query = `
-		SELECT prs.id, prs.pull_request_id, prs.name, prs.author_id, prs.status FROM pull_requests prs
-		JOIN pull_request_reviewers prr on prs.id = prr.pull_request_id
-		JOIN users u on u.id = prr.reviewer_id
-		WHERE u.user_id = $1
+	SELECT prs.id, prs.pull_request_id, prs.name, prs.author_id, prs.status FROM pull_requests prs
+	JOIN pull_request_reviewers prr on prs.id = prr.pull_request_id
+	JOIN users u on u.id = prr.reviewer_id
+	WHERE u.user_id = $1
 	`
 
 	rows, _ := r.getter.DefaultTrOrDB(ctx, r.pool).Query(ctx, query, userID)
 	pullRequestsDB, err := pgx.CollectRows(rows, pgx.RowToStructByName[PullRequestShortDB])
-	if errors.Is(err, pgx.ErrNoRows) {
-		return []prsDomain.PullRequestShort{}, nil
-	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to get pull requests: %w", err)
 	}
@@ -86,13 +83,11 @@ func (r *PostgresPullRequestRepository) GetByID(
 	SELECT u.user_id FROM users u
 	JOIN pull_request_reviewers prr ON u.id = prr.reviewer_id
 	WHERE prr.pull_request_id = $1
-`
+	`
 
 	rows, _ = tx.Query(ctx, queryGetReviewers, pullRequestDB.ID)
 	reviewers, err := pgx.CollectRows(rows, pgx.RowTo[string])
-	if errors.Is(err, pgx.ErrNoRows) {
-		reviewers = []string{}
-	} else if err != nil {
+	if err != nil {
 		return nil, fmt.Errorf("failed to get pull request reviewers: %w", err)
 	}
 
@@ -138,20 +133,9 @@ func (r *PostgresPullRequestRepository) Create(
 		return "", fmt.Errorf("failed to insert pull request: %w", err)
 	}
 
-	const queryInsertReviewer = `
-	INSERT INTO pull_request_reviewers (pull_request_id, reviewer_id)
-	VALUES ($1, 
-	        (SELECT u.id FROM users u WHERE u.user_id = $2))
-	`
-
-	batch := &pgx.Batch{}
-
-	for _, reviewerID := range pullRequest.AssignedReviewers {
-		batch.Queue(queryInsertReviewer, pullRequestSurrogateID, reviewerID)
-	}
-
-	if err = tx.SendBatch(ctx, batch).Close(); err != nil {
-		return "", fmt.Errorf("failed to update: %w", err)
+	err = r.insertReviewers(ctx, tx, pullRequest.AssignedReviewers, pullRequestSurrogateID)
+	if err != nil {
+		return "", fmt.Errorf("failed to insert reviewers: %w", err)
 	}
 
 	if err = tx.Commit(ctx); err != nil {
@@ -167,10 +151,10 @@ func (r *PostgresPullRequestRepository) SetStatusMerged(
 	mergedAt time.Time,
 ) error {
 	const query = `
-        UPDATE pull_requests
-        SET status = 'MERGED'::pull_request_status, merged_at = $2
-        WHERE pull_request_id = $1
-        RETURNING pull_request_id
+	UPDATE pull_requests
+	SET status = 'MERGED'::pull_request_status, merged_at = $2
+	WHERE pull_request_id = $1
+	RETURNING pull_request_id
     `
 
 	var prID string
@@ -192,56 +176,80 @@ func (r *PostgresPullRequestRepository) UpdateReviewers(
 	pullRequestID string,
 	newReviewerIDs []string,
 ) error {
-	const queryDeleteOldReviewers = `
-	DELETE FROM pull_request_reviewers
-	WHERE pull_request_id = (
-		SELECT id FROM pull_requests pr WHERE pr.pull_request_id = $1) 
-	`
-
-	if len(newReviewerIDs) == 0 {
-		_, err := r.getter.DefaultTrOrDB(ctx, r.pool).
-			Exec(ctx, queryDeleteOldReviewers, pullRequestID)
-		if err != nil {
-			return fmt.Errorf("failed to delete reviewers: %w", err)
-		}
-
-		return nil
-	}
-
 	tx, err := r.getter.DefaultTrOrDB(ctx, r.pool).Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
 
-	const queryGetSurrogatePrID = `SELECT id FROM pull_requests pr WHERE pr.pull_request_id = $1`
+	const queryDeleteOldReviewers = `
+	DELETE FROM pull_request_reviewers
+	WHERE pull_request_id = (
+		SELECT id FROM pull_requests pr WHERE pr.pull_request_id = $1)
+	RETURNING pull_request_id
+	`
 
 	var pullRequestSurrogateID int64
-	err = tx.QueryRow(ctx, queryGetSurrogatePrID, pullRequestID).Scan(&pullRequestSurrogateID)
+	err = tx.QueryRow(ctx, queryDeleteOldReviewers, pullRequestID).Scan(&pullRequestSurrogateID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return service.ErrPullRequestNotFound
 	}
 	if err != nil {
-		return fmt.Errorf("failed to get pull request: %w", err)
+		return fmt.Errorf("failed remove old reviewers: %w", err)
 	}
 
-	batch := &pgx.Batch{}
-	batch.Queue(queryDeleteOldReviewers, pullRequestID)
+	err = r.insertReviewers(ctx, tx, newReviewerIDs, pullRequestSurrogateID)
+	if err != nil {
+		return fmt.Errorf("failed to insert new reviewers: %w", err)
+	}
 
-	const queryInsertNewReviewers = `
-	INSERT INTO pull_request_reviewers (pull_request_id, reviewer_id)
-	VALUES (
-	        $1,
-			(SELECT id FROM users WHERE user_ID = $2)
-	)
+	if err = tx.Commit(ctx); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
+}
+
+func (r *PostgresPullRequestRepository) insertReviewers(
+	ctx context.Context,
+	txBase pgx.Tx,
+	reviewerIDs []string,
+	pullRequestSurrogateID int64,
+) error {
+	tx, err := txBase.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	const queryGetSurrogateIDs = `
+	SELECT u.id FROM users u
+	WHERE u.user_id = ANY($1)
 	`
 
-	for _, newReviewerID := range newReviewerIDs {
-		batch.Queue(queryInsertNewReviewers, pullRequestSurrogateID, newReviewerID)
+	rows, _ := tx.Query(ctx, queryGetSurrogateIDs, reviewerIDs)
+	surrogateReviewerIDs, err := pgx.CollectRows(rows, pgx.RowTo[int64])
+	if err != nil {
+		return fmt.Errorf("failed to collect reviewer IDs: %w", err)
+	}
+
+	if len(surrogateReviewerIDs) == 0 {
+		return nil
+	}
+
+	const queryInsertReviewers = `
+	INSERT INTO pull_request_reviewers (pull_request_id, reviewer_id)
+	VALUES ($1, $2)
+	`
+
+	batch := &pgx.Batch{}
+
+	for _, surrogateReviewerID := range surrogateReviewerIDs {
+		batch.Queue(queryInsertReviewers, pullRequestSurrogateID, surrogateReviewerID)
 	}
 
 	if err = tx.SendBatch(ctx, batch).Close(); err != nil {
-		return fmt.Errorf("failed to batch update: %w", err)
+		return fmt.Errorf("failed to insert batch: %w", err)
 	}
 
 	if err = tx.Commit(ctx); err != nil {

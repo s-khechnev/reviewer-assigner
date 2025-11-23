@@ -31,42 +31,20 @@ func (r *PostgresTeamRepository) GetTeamByName(
 	ctx context.Context,
 	teamName string,
 ) (*teamsDomain.Team, error) {
-	tx, err := r.getter.DefaultTrOrDB(ctx, r.pool).Begin(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to begin transaction: %w", err)
-	}
-	defer func() { _ = tx.Rollback(ctx) }()
-
-	const queryGetTeamID = `
-		SELECT t.id FROM teams t WHERE t.name = $1
+	const query = `
+	SELECT u.id, u.user_id, u.name, u.is_active FROM teams t
+	JOIN users u ON t.id = u.team_id
+	WHERE t.name = $1
 	`
 
-	var teamID int64
-	err = tx.QueryRow(ctx, queryGetTeamID, teamName).Scan(&teamID)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, service.ErrTeamNotFound
-	}
-	if err != nil {
-		return nil, fmt.Errorf("failed to find team: %w", err)
-	}
-
-	const queryGetTeamMembers = `
-		SELECT u.id, u.user_id, u.name, u.is_active FROM users u
-		WHERE u.team_id = $1
-	`
-
-	rows, err := tx.Query(ctx, queryGetTeamMembers, teamID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to query team members: %w", err)
-	}
-
+	rows, _ := r.getter.DefaultTrOrDB(ctx, r.pool).Query(ctx, query, teamName)
 	membersDB, err := pgx.CollectRows(rows, pgx.RowToStructByName[MemberDB])
 	if err != nil {
 		return nil, fmt.Errorf("failed to collect team members: %w", err)
 	}
 
-	if err = tx.Commit(ctx); err != nil {
-		return nil, fmt.Errorf("failed to commit transaction: %w", err)
+	if len(membersDB) == 0 {
+		return nil, service.ErrTeamNotFound
 	}
 
 	members := make([]teamsDomain.Member, 0, len(membersDB))
@@ -148,7 +126,7 @@ func (r *PostgresTeamRepository) UpdateMembers(
 	}
 
 	const query = `
-	UPDATE users 
+	UPDATE users
 	SET name = $1, is_active = $2 
 	WHERE user_id = $3 AND team_id = $4
 	`

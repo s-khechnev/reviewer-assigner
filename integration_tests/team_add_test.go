@@ -56,22 +56,7 @@ func (s *TeamAddSuite) TestAddTeamEmpty() {
 
 	defer res.Body.Close()
 
-	s.Require().Equal(http.StatusCreated, res.StatusCode)
-
-	response := teamsHandler.AddTeamResponse{}
-	err = json.NewDecoder(res.Body).Decode(&response)
-	s.Require().NoError(err)
-
-	expected := `
-{
-  "team": {
-	"team_name": "payments",
-	"members": []
-  }
-}
-`
-
-	JSONEq(s.T(), expected, response)
+	s.Require().Equal(http.StatusUnprocessableEntity, res.StatusCode)
 }
 
 func (s *TeamAddSuite) TestAddTeamDefault() {
