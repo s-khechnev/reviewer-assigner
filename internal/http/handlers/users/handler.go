@@ -51,7 +51,7 @@ func (h *UserHandler) SetIsActive(c *gin.Context) {
 		return
 	}
 
-	user, err := h.userService.SetIsActive(c.Copy(), req.UserID, *req.IsActive)
+	user, err := h.userService.SetIsActive(c.Request.Context(), req.UserID, *req.IsActive)
 	if errors.Is(err, service.ErrUserNotFound) {
 		c.JSON(http.StatusNotFound, handlers.NewErrorResponse(handlers.ErrCodeResourceNotFound))
 		return
@@ -86,7 +86,7 @@ func (h *UserHandler) GetReview(c *gin.Context) {
 
 	log.Info(userIDParam+" param decoded", slog.Any(userIDParam, userID))
 
-	pullRequests, err := h.userService.GetReview(c.Copy(), userID)
+	pullRequests, err := h.userService.GetReview(c.Request.Context(), userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, handlers.NewErrorResponse(handlers.ErrCodeUnknown))
 		return

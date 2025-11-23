@@ -51,7 +51,11 @@ func (h *TeamHandler) AddTeam(c *gin.Context) {
 		return
 	}
 
-	newTeam, err := h.teamService.AddTeam(c.Copy(), req.TeamName, membersToDomain(req.Members))
+	newTeam, err := h.teamService.AddTeam(
+		c.Request.Context(),
+		req.TeamName,
+		membersToDomain(req.Members),
+	)
 	if errors.Is(err, service.ErrTeamAlreadyExists) {
 		c.JSON(
 			http.StatusBadRequest,
@@ -87,7 +91,7 @@ func (h *TeamHandler) GetTeam(c *gin.Context) {
 
 	log.Info(teamNameParam+" param decoded", slog.Any(teamNameParam, teamName))
 
-	team, err := h.teamService.GetTeam(c.Copy(), teamName)
+	team, err := h.teamService.GetTeam(c.Request.Context(), teamName)
 	if errors.Is(err, service.ErrTeamNotFound) {
 		c.JSON(http.StatusNotFound, handlers.NewErrorResponse(handlers.ErrCodeResourceNotFound))
 		return

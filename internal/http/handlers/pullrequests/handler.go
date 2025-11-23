@@ -54,7 +54,12 @@ func (h *PullRequestHandler) Create(c *gin.Context) {
 		return
 	}
 
-	pullRequest, err := h.pullRequestService.Create(c.Copy(), req.ID, req.Name, req.AuthorID)
+	pullRequest, err := h.pullRequestService.Create(
+		c.Request.Context(),
+		req.ID,
+		req.Name,
+		req.AuthorID,
+	)
 	if errors.Is(err, service.ErrUserNotFound) || errors.Is(err, service.ErrTeamNotFound) {
 		c.JSON(http.StatusNotFound, handlers.NewErrorResponse(handlers.ErrCodeResourceNotFound))
 		return
@@ -98,7 +103,7 @@ func (h *PullRequestHandler) Merge(c *gin.Context) {
 		return
 	}
 
-	pullRequest, err := h.pullRequestService.Merge(c.Copy(), req.ID)
+	pullRequest, err := h.pullRequestService.Merge(c.Request.Context(), req.ID)
 	if errors.Is(err, service.ErrPullRequestNotFound) {
 		c.JSON(http.StatusNotFound, handlers.NewErrorResponse(handlers.ErrCodeResourceNotFound))
 		return
@@ -136,7 +141,7 @@ func (h *PullRequestHandler) Reassign(c *gin.Context) {
 	}
 
 	pullRequest, replacedBy, err := h.pullRequestService.Reassign(
-		c.Copy(),
+		c.Request.Context(),
 		req.ID,
 		req.OldReviewerID,
 	)
