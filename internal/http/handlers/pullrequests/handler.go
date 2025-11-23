@@ -88,6 +88,16 @@ func (h *PullRequestHandler) Merge(c *gin.Context) {
 
 	log.Info("request decoded", slog.Any("request", req))
 
+	if err := validate.Struct(req); err != nil {
+		log.Warn("validation error", logger.ErrAttr(err))
+
+		c.JSON(
+			http.StatusUnprocessableEntity,
+			handlers.NewErrorResponse(handlers.ErrCodeInvalidBody),
+		)
+		return
+	}
+
 	pullRequest, err := h.pullRequestService.Merge(c.Copy(), req.ID)
 	if errors.Is(err, service.ErrPullRequestNotFound) {
 		c.JSON(http.StatusNotFound, handlers.NewErrorResponse(handlers.ErrCodeResourceNotFound))
@@ -114,6 +124,16 @@ func (h *PullRequestHandler) Reassign(c *gin.Context) {
 	}
 
 	log.Info("request decoded", slog.Any("request", req))
+
+	if err := validate.Struct(req); err != nil {
+		log.Warn("validation error", logger.ErrAttr(err))
+
+		c.JSON(
+			http.StatusUnprocessableEntity,
+			handlers.NewErrorResponse(handlers.ErrCodeInvalidBody),
+		)
+		return
+	}
 
 	pullRequest, replacedBy, err := h.pullRequestService.Reassign(
 		c.Copy(),
