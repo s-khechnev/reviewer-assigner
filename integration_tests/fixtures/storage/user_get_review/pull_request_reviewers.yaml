@@ -1,0 +1,25 @@
+# PR1 (payments): u2 - ревьювер из той же команды
+- pull_request_id: 1
+  reviewer_id: 2
+
+# PR2 (payments): u2 и u3 - ревьюверы из той же команды (u3 неактивен)
+- pull_request_id: 2
+  reviewer_id: 2
+
+- pull_request_id: 2
+  reviewer_id: 3
+
+# PR3 (backend): u5 и u6 - ревьюверы из той же команды
+- pull_request_id: 3
+  reviewer_id: 5
+
+- pull_request_id: 3
+  reviewer_id: 6
+
+# PR4 (backend): u5 - ревьювер из той же команды
+- pull_request_id: 4
+  reviewer_id: 5
+
+# PR5 (backend): u6 - ревьювер из той же команды
+- pull_request_id: 5
+  reviewer_id: 6

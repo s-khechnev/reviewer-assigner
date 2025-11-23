@@ -1,0 +1,44 @@
+# Команда 1 (payments)
+- id: 1
+  user_id: "u1_Payments_Author"
+  name: "User1 Payments Author"
+  team_id: 1
+  is_active: true
+
+- id: 2
+  user_id: "u2_Payments_Reviewer"
+  name: "User2 Payments Reviewer"
+  team_id: 1
+  is_active: true
+
+- id: 3
+  user_id: "u3_Payments_Inactive"
+  name: "User3 Payments Inactive"
+  team_id: 1
+  is_active: false
+
+# Команда 2 (backend)
+- id: 4
+  user_id: "u4_Backend_Author"
+  name: "User4 Backend Author"
+  team_id: 2
+  is_active: true
+
+- id: 5
+  user_id: "u5_Backend_Reviewer"
+  name: "User5 Backend Reviewer"
+  team_id: 2
+  is_active: true
+
+- id: 6
+  user_id: "u6_Backend_Mixed"
+  name: "User6 Backend Mixed"
+  team_id: 2
+  is_active: true
+
+# Команда 3 (frontend)
+- id: 7
+  user_id: "u7_Frontend_Only"
+  name: "User7 Frontend Only"
+  team_id: 3
+  is_active: true

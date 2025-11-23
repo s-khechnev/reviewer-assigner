@@ -176,7 +176,7 @@ func (s *PullRequestCreateSuite) TestCreateWithNoReviewers() {
 	err = json.NewDecoder(res.Body).Decode(&response)
 	s.Require().NoError(err)
 
-	s.Require().Len(response.AssignedReviewers, 0)
+	s.Require().Empty(response.AssignedReviewers)
 
 	expectedTemplate := `
 {
@@ -219,7 +219,7 @@ func (s *PullRequestCreateSuite) TestCreateWithNoActiveMembers() {
 	err = json.NewDecoder(res.Body).Decode(&response)
 	s.Require().NoError(err)
 
-	s.Require().Len(response.AssignedReviewers, 0)
+	s.Require().Empty(response.AssignedReviewers)
 
 	expectedTemplate := `
 {

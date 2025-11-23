@@ -73,11 +73,13 @@ func (h *UserHandler) GetReview(c *gin.Context) {
 	userID, ok := c.GetQuery(userIDParam)
 	if !ok {
 		log.Warn(userIDParam + " not found in query params")
+
 		c.JSON(http.StatusBadRequest, handlers.NewErrorResponse(handlers.ErrCodeInvalidQueryParam))
 		return
 	}
 	if userID == "" {
 		log.Warn(userIDParam + " is empty")
+
 		c.JSON(http.StatusBadRequest, handlers.NewErrorResponse(handlers.ErrCodeInvalidQueryParam))
 		return
 	}
@@ -85,10 +87,6 @@ func (h *UserHandler) GetReview(c *gin.Context) {
 	log.Info(userIDParam+" param decoded", slog.Any(userIDParam, userID))
 
 	pullRequests, err := h.userService.GetReview(c.Copy(), userID)
-	if errors.Is(err, service.ErrTeamNotFound) {
-		c.JSON(http.StatusNotFound, handlers.NewErrorResponse(handlers.ErrCodeResourceNotFound))
-		return
-	}
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, handlers.NewErrorResponse(handlers.ErrCodeUnknown))
 		return
