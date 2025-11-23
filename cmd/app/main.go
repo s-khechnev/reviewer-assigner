@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"log/slog"
-
 	"reviewer-assigner/internal/app"
 	"reviewer-assigner/internal/config"
 	"reviewer-assigner/internal/logger"
